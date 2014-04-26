@@ -3,5 +3,5 @@ __pycache__/
 *.py[cod]
 
 #sqlite files
-data/*
+
 .sqlite3
