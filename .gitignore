@@ -3,5 +3,5 @@ __pycache__/
 *.py[cod]
 
 #sqlite files
-
-.sqlite3
+*.sqlite3
+*.db
