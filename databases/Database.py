@@ -21,6 +21,18 @@ class Database(object):
             table - the name of the table within the databse
 
         the name and table arguments are given defaults, and should be set in a configuration file
+
+        instance data:
+            databaseFolder - the folder where the database file is
+            usernameField - the text name of the field where the user's username is held in the table
+            uniqueID - the text name of the field where the id for each user is held in the table
+            name - the name of the database file
+            table - the name of the table used by this object
+            path - the absolute path to the database file
+            ----the following are initialized in __init__, although not clearly
+            db - the sqlite3 database object (used for connections, commits, and closes)
+            cursor - the sqlite3 cursor object (used for executes)
+            columnInfo - list<tuple<column name, data type>> for each column in the database
         """
 
         #initialize values
@@ -38,6 +50,8 @@ class Database(object):
             self._create()
             self._connect()
 
+        self.tableLength = len(self.columnInfo) - 2
+
 
 
     def _create(self):
@@ -50,7 +64,7 @@ class Database(object):
 
         cursor.execute('''CREATE TABLE if not exists {table} ({id} INTEGER PRIMARY KEY AUTOINCREMENT, {username} TEXT)'''
             .format(table = self.table, id = self.uniqueID, username = self.usernameField))
-        
+
         db.commit()
         db.close()
 
@@ -66,11 +80,79 @@ class Database(object):
 
 
     def columns(self):
+        """
+        returns 
+        """
         return zip(*zip(*self.columnInfo)[1:3])
 
+    def addUser(self, name):
+        """
+        adds a user to the database and initializes them with 0s for all items
+        arguments:
+            name - the name of the new user
+        """
+        pass
 
+    def addColumn(self, item):
+        """
+        adds a new type of item (course) to the database
+        arguments:
+            item - the name of the course
+        """
+        pass
+
+    def delUser(self, name):
+        """
+        removes a user from the database
+        arguments:
+            name - the username of the user
+        """
+        pass
+
+    def getUser(self, name):
+        """
+        returns the list of opinions for a given user
+        arguments:
+            name - the name of the user
+
+        return: a tuple of values 0-5 corresponding to null or an opinion on a course/item
+        """
+        pass
+
+    def getOpinion(self, user, item):
+        """
+        returns the user's opinion on a single item
+        user - the name of the user
+            item - the position of the item in the matrix of items, in other words, the first item is 0, things are
+                indexed by their position in the matrix, not the database
+
+        return: a value from 0-5 corresponding to null or an opinion on a course/item
+        """
+        pass
+
+    def updateUser(self, user, values):
+        """
+        changes all of a user's opinions for items at once
+        arguments:
+            user - the name of the user
+            values - an array of updated values
+        """
+        pass
+
+    def updateSingleItem(self, user, item, value):
+        """
+        changes a user's opinion on a single item
+        arguments:
+            user - the name of the user
+            item - the position of the item in the matrix of items, in other words, the first item is 0, things are
+                indexed by their position in the matrix, not the database
+            value - the new value of the item
+        """
+        pass
+    
 
 
 if __name__ == "__main__":
     database = Database()
     print database.columns()
+    assert database.tableLength == 0
