@@ -115,7 +115,7 @@ class Viewer:
     Basically a Database object, except it can't edit existing databases (without someone doing...things)
     """
 
-    def __init__(self, name, table, size):
+    def __init__(self, name, table):
 
         """
         var name - the filename of the database to be connected to
@@ -130,7 +130,18 @@ class Viewer:
         self.table = table
         self.db = sqlite3.connect(os.path.join(self.databaseFolder,self.name))
         self.cursor = self.db.cursor()
-        self.size = size
+        self.size = getSize()
+
+    def getSize(self):
+        """
+        """
+
+        maxLength = 0
+        for item in self.cursor.execute("SELECT * FROM {table}".format(table = self.table)):
+            values = ast.literal_eval(item[2])
+            if len(values) > maxLength:
+                maxLength = len(values)
+        return maxLength
 
     def getUser(self, user):
 
@@ -142,6 +153,19 @@ class Viewer:
         values = self.cursor.fetchone()[1]
         values = self._padValues(values)
         return values
+
+    def _padValues(self, values):
+
+        """
+        Pads the array from a user into a longer array, also turns the string array into an array, so that's important.
+        var values - 
+        return vals, the padded, list-form version of the information contained in the database
+        """
+
+        vals = ast.literal_eval(values)
+        if len(vals) < self.size:
+            vals += [0 for x in xrange(self.size-len(vals))]
+        return vals
 
 
 if __name__ == "__main__":
