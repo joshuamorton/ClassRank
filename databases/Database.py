@@ -80,7 +80,7 @@ class Database(object):
 
     def columns(self):
         """
-        returns 
+        returns stuff from the list in a kinda elegent manner.
         """
         return zip(*zip(*self.columnInfo)[1:3])
 
@@ -93,7 +93,7 @@ class Database(object):
             name - the name of the new user
         """
 
-        self.db.execute('''INSERT INTO {table} ({fields}) VALUES ({insertions})'''
+        self.cursor.execute('''INSERT INTO {table} ({fields}) VALUES ({insertions})'''
             .format(table = self.table, insertions = self._questionMarks(), fields = self._fields()), 
             self._insertions(name))
         self.db.commit()
@@ -104,7 +104,7 @@ class Database(object):
 
 
     def _insertions(self, name):
-        return (name,) + tuple(0 for x in xrange(self.tableLength))
+        return (name,) + tuple(None for x in xrange(self.tableLength))
 
 
     def _fields(self):
@@ -120,7 +120,7 @@ class Database(object):
         arguments:
             item - the name of the course
         """
-        self.db.execute('''ALTER TABLE {table} ADD {column} {type}'''
+        self.cursor.execute('''ALTER TABLE {table} ADD {column} {type}'''
             .format(table = self.table, type = datatype, column = column))
         self.db.commit()
 
@@ -140,7 +140,9 @@ class Database(object):
 
         return: a tuple of values 0-5 corresponding to null or an opinion on a course/item
         """
-        pass
+        self.cursor.execute('''SELECT * FROM {table} where {username} = ? '''
+            .format(table = self.table, username = self.usernameField), (name,))
+        return self.cursor.fetchone()[1:]
 
     def getOpinion(self, user, item):
         """
@@ -178,8 +180,10 @@ class Database(object):
 if __name__ == "__main__":
     database = Database()
     #database.addColumn("newOne2")
-    database.addUser("me")
+    database.addUser("them")
     print database.columns()
+    print database.getUser("them")
+    print database.getUser("me")
 
 
     print database.tableLength
