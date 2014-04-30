@@ -29,7 +29,7 @@ class Database(object):
             name - the name of the database file
             table - the name of the table used by this object
             path - the absolute path to the database file
-            ----the following are initialized in __init__, although not clearly
+            ----the following are initialized in __init__, although not clearly----
             db - the sqlite3 database object (used for connections, commits, and closes)
             cursor - the sqlite3 cursor object (used for executes)
             columnInfo - list<tuple<column name, data type>> for each column in the database
@@ -78,28 +78,51 @@ class Database(object):
 
         self.columnInfo = [x for x in self.cursor.execute('''PRAGMA table_info({table})'''.format(table=self.table))]
 
-
     def columns(self):
         """
         returns 
         """
         return zip(*zip(*self.columnInfo)[1:3])
 
+
+    #this is going to need magic
     def addUser(self, name):
         """
         adds a user to the database and initializes them with 0s for all items
         arguments:
             name - the name of the new user
         """
-        pass
 
-    def addColumn(self, item):
+        self.db.execute('''INSERT INTO {table} ({fields}) VALUES ({insertions})'''
+            .format(table = self.table, insertions = self._questionMarks(), fields = self._fields()), 
+            self._insertions(name))
+        self.db.commit()
+
+
+    def _questionMarks(self):
+        return ",".join("?" for x in xrange(self.tableLength+1))
+
+
+    def _insertions(self, name):
+        return (name,) + tuple(0 for x in xrange(self.tableLength))
+
+
+    def _fields(self):
+        """
+        returns all of the (non autoincrementing primary key) fields in the database as a comma separated list
+        """
+        return ",".join(list(zip(*self.columnInfo)[1])[1:])
+
+
+    def addColumn(self, column, datatype="integer"):
         """
         adds a new type of item (course) to the database
         arguments:
             item - the name of the course
         """
-        pass
+        self.db.execute('''ALTER TABLE {table} ADD {column} {type}'''
+            .format(table = self.table, type = datatype, column = column))
+        self.db.commit()
 
     def delUser(self, name):
         """
@@ -154,5 +177,9 @@ class Database(object):
 
 if __name__ == "__main__":
     database = Database()
+    #database.addColumn("newOne2")
+    database.addUser("me")
     print database.columns()
-    assert database.tableLength == 0
+
+
+    print database.tableLength
