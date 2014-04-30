@@ -1,4 +1,32 @@
 """
+A collection of tools to access and work with databases, with the goal of being completely self-contained (ie. all
+    database use runs through this api) allowing for easy updates later.
+
+Classes:
+    
+    Database:
+        A database editor
+        Methods:
+            Connect (automatically) - Connect to an existing database
+            Create (automatically)  - create a new database and connect to it
+            addUser                 - create a new user (row)
+            deleteUser              - remove an existing user from the database
+            addItem                 - add a new item (course to be judged) to the database
+            currentOpinions         - get all opinions for a user as a tuple
+            currentOpinion          - get a user's opinion for a specific item
+            changeOpinion           - set a user's opinion for a specific item
+            newField                - adds a new Field (column) to the table
+
+    Viewer:
+        Like a database, but read-only (also probably caching magicks)
+        Methods:
+        Connect     - Connect to an existing database
+        getOpinions - get all opinions for a user as a tuple
+        getOpinion  - get a user's opinion for a specific item
+
+Both the Database and Viewer objects should be completely safe, in that they do everything required to prevent attacks 
+    sent to the system by nefarious users (SQL injection, for example) and they implement all required error and edge
+    case checking.  In other words, the objects should deal with any errors internally and preferably proactively.
 """
 
 import sqlite3
@@ -7,32 +35,56 @@ import os.path
 
 class Database(object):
     """
-    A database wrapper for a table that has many rows but few columns
-    Tables:
-        username -> unique key, [x columns representing opinions on items]
+    A class that can access, read, write, create and generally pretend to be a database.  Currently implemented in SQLite.
+    The current implementation uses SQLite, for which there is good documentation here http://www.sqlite.org/
+
+    A quick reference:
+        CREATE TABLE if not exists {table_name} ({comma seperated statements}, {representing field type and name}, {ex. INTEGER id})
+            creates a new table with a set of columns with the given settings
+
+        PRAGMA table_info({table_name})
+            returns ({position}, {name}, {type}, {can be null}, {default}, {is primary key}) for each field in the table
+
+        INSERT INTO {table_name} ({list_of_fields}) VALUES ({list_of_values})
+            {list_of_values} should always be "?" and have its value set elswhere to prevent injection
+
+        ALTER TABLE {table_name} ADD {column_name} {type}
+            adds {column_name} of type {type} to {table}, possible to set initial values.  This is slow
+
+        SELECT {fields} FROM {table_name} where {field} = {?}
+            returns a tuple of the values of fields (which can be wildcard) for each column where {field} is the named 
+            value
+
+        UPDATE {table_name} SET {item}=? WHERE {field} = ?
+            changes the value of {item} in all rows where {field} is the given value.  Requires a tuple 
+            ({new_item}, {field_value}) to work correctly
+
+    Instance Data:
+        databaseFolder -> the folder where the database is held
+        usernameField  -> the field name for "username", the string representation of a user
+        uniqueID       -> the field name for the primary key value
+        name           -> the name of the database file
+        table          -> the name of the active table in the database file
+        path           -> the relative path to the database, including the database name
+        tableLength    -> the number of opinion fields in the table
+        db             -> the sqlite3 database object
+        cursor         -> the sqlite3 cursor object
+        columnInfo     -> ({position}, {name}, {type}, {can be null}, {default}, {is primary key}) for each field in the
+                            table
+
+
     """
 
     
     def __init__(self, name="database.db", table="main", folder="data"):
         """
-        Initialize the database object
-        keyword arguments:
-            name - the name of the database file
-            table - the name of the table within the databse
+        Looks for a database of the given name.  If it exists, connects to it.  Otherwise, creates it and then connects
+            to it.
 
-        the name and table arguments are given defaults, and should be set in a configuration file
-
-        instance data:
-            databaseFolder - the folder where the database file is
-            usernameField - the text name of the field where the user's username is held in the table
-            uniqueID - the text name of the field where the id for each user is held in the table
-            name - the name of the database file
-            table - the name of the table used by this object
-            path - the absolute path to the database file
-            ----the following are initialized in __init__, although not clearly----
-            db - the sqlite3 database object (used for connections, commits, and closes)
-            cursor - the sqlite3 cursor object (used for executes)
-            columnInfo - list<tuple<column name, data type>> for each column in the database
+        Arguments:
+            name -> the name of the database file
+            table -> the name of the table to be used
+            folder -> path to the folder in which the database is stored, can be "."
         """
 
         #initialize values
@@ -56,7 +108,9 @@ class Database(object):
 
     def _create(self):
         """
-        Initializes a database with a unique id and username field
+        Creates a table of the provided name if necessary, creates two columns in the table:
+            username, which represents the name of the user
+            id, a unique primary key for each user
         """
 
         db = sqlite3.connect(self.path)
@@ -70,7 +124,7 @@ class Database(object):
 
     def _connect(self):
         """
-        Connects to the database and sets some instance-specific information such as grabbing column headers
+        Establishes a connection to the table and sets the .db and .cursor values
         """
 
         self.db = sqlite3.connect(self.path)
@@ -80,7 +134,7 @@ class Database(object):
 
     def columns(self):
         """
-        returns stuff from the list in a kinda elegent manner.
+        returns a list of tuples in the format ({field_name}, {data_format}) for each field/column in the table
         """
         return zip(*zip(*self.columnInfo)[1:3])
 
@@ -88,84 +142,79 @@ class Database(object):
     #this is going to need magic
     def addUser(self, name):
         """
-        adds a user to the database and initializes them with 0s for all items
-        arguments:
-            name - the name of the new user
+        Checks to see if a user of the given name exists.  If they do, do nothing.  If they don't, create a new user of
+            the new name
+
+        Arguments:
+            name - the username of the new user
         """
 
-        self.cursor.execute('''INSERT INTO {table} ({fields}) VALUES ({insertions})'''
-            .format(table = self.table, insertions = self._questionMarks(), fields = self._fields()), 
-            self._insertions(name))
-        self.db.commit()
+        if name not in self:
+            self.cursor.execute('''INSERT INTO {table} ({fields}) VALUES ({insertions})'''
+                .format(table = self.table, insertions = self._questionMarks(), fields = self._fields()), 
+                self._insertions(name))
+            self.db.commit()
 
 
     def _questionMarks(self):
+        """
+        Helper method that creates a comma seperated list of question marks for SQL parameterization.  The number of
+            question marks is 1 for username + the number of additional columns.
+        """
         return ",".join("?" for x in xrange(self.tableLength+1))
 
 
     def _insertions(self, name):
+        """
+        Returns a tuple in the format ({username},None,...None) where None is repeated for each non-username field in
+            the table
+        """
         return (name,) + tuple(None for x in xrange(self.tableLength))
 
 
     def _fields(self):
         """
-        returns all of the (non autoincrementing primary key) fields in the database as a comma separated list
+        Returns a comma seperated string of the fields in the table, useful for "INSERT INTO {table} ({fields})"
         """
         return ",".join(list(zip(*self.columnInfo)[1])[1:])
 
 
-    def addColumn(self, column, datatype="integer"):
+    def newField(self, column, datatype="integer"):
         """
-        adds a new type of item (course) to the database
-        arguments:
-            item - the name of the course
+        Adds a new column (For a new course) to the table, if it does not exist
         """
-        self.cursor.execute('''ALTER TABLE {table} ADD {column} {type}'''
-            .format(table = self.table, type = datatype, column = column))
-        self.db.commit()
 
-    def delUser(self, name):
+        if column not in list(zip(*self.columnInfo)[1])[1:]:
+            self.cursor.execute('''ALTER TABLE {table} ADD {column} {type}'''
+                .format(table = self.table, type = datatype, column = column))
+            self.db.commit()
+
+    def deleteUser(self, name):
         """
-        removes a user from the database
-        arguments:
-            name - the username of the user
+        Removes a user (row) from the database
         """
         pass
 
-    def getUser(self, name):
+    def currentOpinions(self, name):
         """
-        returns the list of opinions for a given user
-        arguments:
-            name - the name of the user
-
-        return: a tuple of values 0-5 corresponding to null or an opinion on a course/item
+        Returns all of the opinions of a given user as a tuple
         """
         self.cursor.execute('''SELECT * FROM {table} where {username} = ? '''
             .format(table = self.table, username = self.usernameField), (name,))
         return self.cursor.fetchone()[1:]
 
-    def getOpinion(self, user, item):
+    def currentOpinion(self, user, item):
         """
-        returns the user's opinion on a single item
-        user - the name of the user
-            item - the position of the item in the matrix of items, in other words, the first item is 0, things are
-                indexed by their position in the matrix, not the database
-
-        return: a value from 0-5 corresponding to null or an opinion on a course/item
+        Returns the opinion of a user for a single item
         """
         self.cursor.execute('''SELECT {item} FROM {table} where {username} = ? '''
             .format(table = self.table, username = self.usernameField, item = item), (user,))
         return self.cursor.fetchone()[0]
 
 
-    def setItem(self, user, item, value):
+    def changeOpinion(self, user, item, value):
         """
-        changes a user's opinion on a single item
-        arguments:
-            user - the name of the user
-            item - the position of the item in the matrix of items, in other words, the first item is 0, things are
-                indexed by their position in the matrix, not the database
-            value - the new value of the item
+        Sets the value of an item for a single user
         """
         self.cursor.execute('''UPDATE {table} SET {item}=? WHERE {username} = ? '''
             .format(table = self.table, fields = self._fields(), username = self.usernameField, item=item), 
@@ -173,16 +222,42 @@ class Database(object):
         self.db.commit()
     
 
+    def __contains__(self, user):
+        """
+        For an user returns True if an item of that name is in the table, otherwise
+            returns False
+        """
+        
+        self.cursor.execute('''SELECT * FROM {table} where {username} = ?'''
+            .format(table = self.table, username = self.usernameField), (user,))
+        if self.cursor.fetchone() == None:
+            return False
+        else:
+            return True
+
+
+
+
+class Viewer:
+    """
+    """
+    pass
+
+
+
+
 
 if __name__ == "__main__":
     database = Database()
-    #database.addColumn("newOne2")
     database.addUser("them")
-    database.setItem("them", "newOne", 2)
-    print database.columns()
-    print database.getOpinion("them", "newOne")
-    print database.getUser("them")
-    print database.getUser("me")
+    database.addUser("me")
+    assert "them" in database
+    assert "me" in database
+    database.newField("CS1332")
+    database.changeOpinion("me", "CS1332", 1)
+    database.changeOpinion("them", "CS1332", 5)
+    assert database.currentOpinion("them", "CS1331") == 4
+    assert database.currentOpinion("me", "CS1331") == 5
+    assert database.currentOpinion("them", "CS1332") == 5
+    assert database.currentOpinion("me", "CS1332") == 1
 
-
-    print database.tableLength
