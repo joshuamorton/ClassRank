@@ -153,18 +153,12 @@ class Database(object):
 
         return: a value from 0-5 corresponding to null or an opinion on a course/item
         """
-        pass
+        self.cursor.execute('''SELECT {item} FROM {table} where {username} = ? '''
+            .format(table = self.table, username = self.usernameField, item = item), (user,))
+        return self.cursor.fetchone()[0]
 
-    def updateUser(self, user, values):
-        """
-        changes all of a user's opinions for items at once
-        arguments:
-            user - the name of the user
-            values - an array of updated values
-        """
-        pass
 
-    def updateSingleItem(self, user, item, value):
+    def setItem(self, user, item, value):
         """
         changes a user's opinion on a single item
         arguments:
@@ -173,7 +167,10 @@ class Database(object):
                 indexed by their position in the matrix, not the database
             value - the new value of the item
         """
-        pass
+        self.cursor.execute('''UPDATE {table} SET {item}=? WHERE {username} = ? '''
+            .format(table = self.table, fields = self._fields(), username = self.usernameField, item=item), 
+            tuple([value,user]))
+        self.db.commit()
     
 
 
@@ -181,7 +178,9 @@ if __name__ == "__main__":
     database = Database()
     #database.addColumn("newOne2")
     database.addUser("them")
+    database.setItem("them", "newOne", 2)
     print database.columns()
+    print database.getOpinion("them", "newOne")
     print database.getUser("them")
     print database.getUser("me")
 
