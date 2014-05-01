@@ -342,5 +342,3 @@ if __name__ == "__main__":
     assert database.currentOpinion("them", "CS1332") == 5
     assert database.currentOpinion("me", "CS1332") == 1
     assert database.currentOpinions("me") == viewer.currentOpinions("me")
-
-
