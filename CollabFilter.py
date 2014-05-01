@@ -5,7 +5,7 @@ heavily modified version of the code here:
     https://github.com/uenowataru/CollaborativeFiltering/blob/master/CollaborativeFiltering.py
 """
 
-import databases
+import databases.Database as databases
 import math
 
 class CollaborativeFilter:
@@ -13,12 +13,12 @@ class CollaborativeFilter:
     :function this: does something
     """
 
-    def __init__(self, database, table):
+    def __init__(self, database, table, folder):
         """
-        :param that: represents something
         """
-        self.dbViewer = databases.Viewer(database, table)
-
+        self.dbViewer = databases.Viewer(database, table, folder)
+        self.db = databases.Database(database, table, folder)
+        self.weights = {}
 
 
 
@@ -27,3 +27,6 @@ class CollaborativeFilter:
 if __name__ == "__main__":
     assert 1 == 1
     #do more
+    x = CollaborativeFilter("database.db", "main", "databases/data")
+    assert x.dbViewer.currentOpinions("them") == x.db.currentOpinions("them")
+    print x.dbViewer.currentOpinions("them")

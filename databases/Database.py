@@ -205,7 +205,7 @@ class Database(object):
         """
         self.cursor.execute('''SELECT * FROM {table} where {username} = ? '''
             .format(table = self.table, username = self.usernameField), (name,))
-        return self.cursor.fetchone()[1:]
+        return self.cursor.fetchone()[2:]
 
 
     def currentOpinion(self, user, item):
@@ -289,7 +289,7 @@ class _Viewer:
         """
         self.cursor.execute('''SELECT * FROM {table} where {username} = ? '''
             .format(table = self.table, username = self.usernameField), (name,))
-        return self.cursor.fetchone()[1:]
+        return self.cursor.fetchone()[2:]
 
 
     def currentOpinion(self, user, item):
