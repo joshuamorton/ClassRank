@@ -105,7 +105,6 @@ class Database(object):
         self.tableLength = len(self.columnInfo) - 2
 
 
-
     def _create(self):
         """
         Creates a table of the provided name if necessary, creates two columns in the table:
@@ -122,6 +121,7 @@ class Database(object):
         db.commit()
         db.close()
 
+
     def _connect(self):
         """
         Establishes a connection to the table and sets the .db and .cursor values
@@ -136,10 +136,10 @@ class Database(object):
         """
         returns a list of tuples in the format ({field_name}, {data_format}) for each field/column in the table
         """
+        self.columnInfo = [x for x in self.cursor.execute('''PRAGMA table_info({table})'''.format(table=self.table))]
         return zip(*zip(*self.columnInfo)[1:3])
 
 
-    #this is going to need magic
     def addUser(self, name):
         """
         Checks to see if a user of the given name exists.  If they do, do nothing.  If they don't, create a new user of
@@ -189,11 +189,15 @@ class Database(object):
                 .format(table = self.table, type = datatype, column = column))
             self.db.commit()
 
+
+
+
     def deleteUser(self, name):
         """
         Removes a user (row) from the database
         """
         pass
+
 
     def currentOpinions(self, name):
         """
@@ -202,6 +206,7 @@ class Database(object):
         self.cursor.execute('''SELECT * FROM {table} where {username} = ? '''
             .format(table = self.table, username = self.usernameField), (name,))
         return self.cursor.fetchone()[1:]
+
 
     def currentOpinion(self, user, item):
         """
@@ -237,22 +242,98 @@ class Database(object):
 
 
 
-
-class Viewer:
+def Viewer(name="database.db", table="main", folder="data"):
     """
+    Helper function for implementing a database viewer, makes certain that the file exists
     """
-    pass
+    if (os.path.isfile(os.path.join(folder, name))):
+        return _Viewer(name, table, folder)
+    else:
+        raise IOError
 
 
+class _Viewer:
+    """
+    A readonly database instance
+    """
+
+    def __init__(self, name="database.db", table="main", folder="data"):
+        self.databaseFolder = folder
+        self.usernameField = "username"
+        self.uniqueID = "id"
+        self.name = name
+        self.table = table
+        self.path = os.path.join(self.databaseFolder,self.name)
+        self._connect()
+
+    def _connect(self):
+        """
+        Establishes a connection to the table and sets the .db and .cursor values
+        """
+
+        self.db = sqlite3.connect(self.path)
+        self.cursor = self.db.cursor()
+
+        self.columnInfo = [x for x in self.cursor.execute('''PRAGMA table_info({table})'''.format(table=self.table))]
+
+    def columns(self):
+        """
+        returns a list of tuples in the format ({field_name}, {data_format}) for each field/column in the table
+        """
+        self.columnInfo = [x for x in self.cursor.execute('''PRAGMA table_info({table})'''.format(table=self.table))]
+        return zip(*zip(*self.columnInfo)[1:3])
+
+    def currentOpinions(self, name):
+        """
+        Returns all of the opinions of a given user as a tuple
+        """
+        self.cursor.execute('''SELECT * FROM {table} where {username} = ? '''
+            .format(table = self.table, username = self.usernameField), (name,))
+        return self.cursor.fetchone()[1:]
+
+
+    def currentOpinion(self, user, item):
+        """
+        Returns the opinion of a user for a single item
+        """
+        self.cursor.execute('''SELECT {item} FROM {table} where {username} = ? '''
+            .format(table = self.table, username = self.usernameField, item = item), (user,))
+        return self.cursor.fetchone()[0]
+
+
+    def changeOpinion(self, user, item, value):
+        """
+        Sets the value of an item for a single user
+        """
+        self.cursor.execute('''UPDATE {table} SET {item}=? WHERE {username} = ? '''
+            .format(table = self.table, fields = self._fields(), username = self.usernameField, item=item), 
+            tuple([value,user]))
+        self.db.commit()
+    
+
+    def __contains__(self, user):
+        """
+        For an user returns True if an item of that name is in the table, otherwise
+            returns False
+        """
+        
+        self.cursor.execute('''SELECT * FROM {table} where {username} = ?'''
+            .format(table = self.table, username = self.usernameField), (user,))
+        if self.cursor.fetchone() == None:
+            return False
+        else:
+            return True
 
 
 
 if __name__ == "__main__":
+    viewer = Viewer()
     database = Database()
     database.addUser("them")
     database.addUser("me")
     assert "them" in database
     assert "me" in database
+    assert "me" in viewer
     database.newField("CS1332")
     database.changeOpinion("me", "CS1332", 1)
     database.changeOpinion("them", "CS1332", 5)
@@ -260,4 +341,6 @@ if __name__ == "__main__":
     assert database.currentOpinion("me", "CS1331") == 5
     assert database.currentOpinion("them", "CS1332") == 5
     assert database.currentOpinion("me", "CS1332") == 1
+    assert database.currentOpinions("me") == viewer.currentOpinions("me")
+
 
