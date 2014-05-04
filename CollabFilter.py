@@ -41,7 +41,7 @@ class CollaborativeFilter:
         Calculates the similarity between to users via the fitness function cos(vec(x), vec(y)):
         (sum[for i in the list of Items shared by users x and y](rating of x for i * rating of y for i))/((rss of rating(i) for i by x) * (rss of rating(i) for i by y)
         where rss is the root sum squared computed by sqrt(sum[for i in the list of Items rated by user u](rating of i by u)**2)
-        see cos.png
+        see cos.png.
         """
         
 
