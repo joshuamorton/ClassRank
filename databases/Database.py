@@ -311,6 +311,14 @@ class _Viewer:
         self.db.commit()
     
 
+    def users(self):
+        """
+        returns a list of usernames
+        """
+        return [name for name in self.cursor.execute('''SELECT {username} FROM {table}'''
+            .format(table = self.table, username = self.usernameField))]
+
+
     def __contains__(self, user):
         """
         For an user returns True if an item of that name is in the table, otherwise
