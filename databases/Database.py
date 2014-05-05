@@ -250,7 +250,7 @@ def Viewer(name="database.db", table="main", folder="data"):
         raise IOError
 
 
-class _Viewer:
+class _Viewer(object):
     """
     A readonly database instance
     """
@@ -333,19 +333,38 @@ class _Viewer:
 
 
 if __name__ == "__main__":
-    viewer = Viewer()
     database = Database()
-    database.addUser("them")
-    database.addUser("me")
-    assert "them" in database
-    assert "me" in database
-    assert "me" in viewer
+    viewer = Viewer()
+    database.addUser("one")
+    database.addUser("two")
+    database.addUser("three")
+    database.addUser("four")
+    database.newField("CS1331")
     database.newField("CS1332")
-    database.changeOpinion("me", "CS1332", 1)
-    database.changeOpinion("them", "CS1332", 5)
-    assert database.currentOpinion("them", "CS1331") == 4
-    assert database.currentOpinion("me", "CS1331") == 5
-    assert database.currentOpinion("them", "CS1332") == 5
-    assert database.currentOpinion("me", "CS1332") == 1
-    assert database.currentOpinions("me") == viewer.currentOpinions("me")
-    database.newField("CS4001")
+    database.newField("CS1333")
+    database.newField("CS1334")
+    database.newField("CS1335")
+    database.changeOpinion("one", "CS1331", 4)
+    database.changeOpinion("one", "CS1332", 3)
+    database.changeOpinion("one", "CS1333", 3)
+    database.changeOpinion("one", "CS1334", 3)
+    database.changeOpinion("one", "CS1335", 2)
+    database.changeOpinion("two", "CS1331", 4)
+    database.changeOpinion("two", "CS1332", 3)
+    database.changeOpinion("two", "CS1333", 3)
+    database.changeOpinion("two", "CS1334", 3)
+    database.changeOpinion("two", "CS1335", None)
+    database.changeOpinion("three", "CS1331", 4)
+    database.changeOpinion("three", "CS1332", 2)
+    database.changeOpinion("three", "CS1333", 2)
+    database.changeOpinion("three", "CS1334", None)
+    database.changeOpinion("three", "CS1335", 5)
+    database.changeOpinion("four", "CS1331", 4)
+    database.changeOpinion("four", "CS1332", 1)
+    database.changeOpinion("four", "CS1333", 1)
+    database.changeOpinion("four", "CS1334", 1)
+    database.changeOpinion("four", "CS1335", 1)
+
+
+
+

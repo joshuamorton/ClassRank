@@ -38,14 +38,20 @@ class CollaborativeFilter:
         """
         """
         users = {person[0] for person in self.dbViewer.users()} - {user}
-        print users
         if user in self.opinions:
-            return self.opinions[user][item] if item in self.opinions[user] else None
+            if item in self.opinions[user]:
+                return self.opinions[user][item] if item in self.opinions[user] else None
+            else:
+                self.opinions[user][item] = self._k(user, users) * sum(self._calculateSimilarities(user, other) * self._fetchOpinion(other, item) for other in users)
+                return self.opinions[user][item]
         else:
-            #calculate similarities between users (the simul function)
-            users = [self._calculateSimilarities(user, other) for other in users]
-            #
+            self.opinions[user] = {}
+            self.opinions[user][item] = self._k(user, users) * sum(self._calculateSimilarities(user, other) * self._fetchOpinion(other, item) for other in users)
 
+    def _k(self, user, users):
+        """
+        """
+        return 1.0 / sum(self._calculateSimilarities(user, other) for other in users)
 
     def _calculateSimilarities(self, user, other):
         """
@@ -73,9 +79,13 @@ class CollaborativeFilter:
             return self.similarities[user][other]
 
     def _rss(self, user):
+        """
+        """
         return math.sqrt(sum(opinion**2 for opinion in self.dbViewer.currentOpinions(user) if opinion is not None))
 
     def _fetchOpinion(self, user, item):
+        """
+        """
         if user in self.cache:
             return self.cache[user][item]
         else:
@@ -92,6 +102,5 @@ if __name__ == "__main__":
     assert 1 == 1
     #do more
     x = CollaborativeFilter("database.db", "main", "databases/data")
-    assert x.dbViewer.currentOpinions("them") == x.db.currentOpinions("them")
-    print x.dbViewer.currentOpinions("them")
-    print x._calculateSimilarities("them", "me")
+    print x.calculateOpinion("two", "CS1335")
+    print x.calculateOpinion("three", "CS1334")
