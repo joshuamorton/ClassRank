@@ -37,16 +37,18 @@ class CollaborativeFilter:
     def calculateOpinion(self, user, item):
         """
         """
-        users = {person[0] for person in self.dbViewer.users()} - {user}
         if user in self.opinions:
             if item in self.opinions[user]:
                 return self.opinions[user][item] if item in self.opinions[user] else None
             else:
+                users = {person[0] for person in self.dbViewer.users()} - {user}
                 self.opinions[user][item] = self._k(user, users) * sum(self._calculateSimilarities(user, other) * self._fetchOpinion(other, item) for other in users)
                 return self.opinions[user][item]
         else:
+            users = {person[0] for person in self.dbViewer.users()} - {user}
             self.opinions[user] = {}
             self.opinions[user][item] = self._k(user, users) * sum(self._calculateSimilarities(user, other) * self._fetchOpinion(other, item) for other in users)
+            return self.opinions[user][item]
 
     def _k(self, user, users):
         """
