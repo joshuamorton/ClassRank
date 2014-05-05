@@ -132,12 +132,12 @@ class Database(object):
 
         self.columnInfo = [x for x in self.cursor.execute('''PRAGMA table_info({table})'''.format(table=self.table))]
 
-    def columns(self):
+    def items(self):
         """
         returns a list of tuples in the format ({field_name}, {data_format}) for each field/column in the table
         """
         self.columnInfo = [x for x in self.cursor.execute('''PRAGMA table_info({table})'''.format(table=self.table))]
-        return zip(*zip(*self.columnInfo)[1:3])
+        return zip(*zip(*self.columnInfo)[1:3])[2:]
 
 
     def addUser(self, name):
@@ -188,8 +188,6 @@ class Database(object):
             self.cursor.execute('''ALTER TABLE {table} ADD {column} {type}'''
                 .format(table = self.table, type = datatype, column = column))
             self.db.commit()
-
-
 
 
     def deleteUser(self, name):
@@ -276,12 +274,12 @@ class _Viewer:
 
         self.columnInfo = [x for x in self.cursor.execute('''PRAGMA table_info({table})'''.format(table=self.table))]
 
-    def columns(self):
+    def items(self):
         """
         returns a list of tuples in the format ({field_name}, {data_format}) for each field/column in the table
         """
         self.columnInfo = [x for x in self.cursor.execute('''PRAGMA table_info({table})'''.format(table=self.table))]
-        return zip(*zip(*self.columnInfo)[1:3])
+        return zip(*zip(*self.columnInfo)[1:3])[2:]
 
     def currentOpinions(self, name):
         """
@@ -350,3 +348,4 @@ if __name__ == "__main__":
     assert database.currentOpinion("them", "CS1332") == 5
     assert database.currentOpinion("me", "CS1332") == 1
     assert database.currentOpinions("me") == viewer.currentOpinions("me")
+    database.newField("CS4001")

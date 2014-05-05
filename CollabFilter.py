@@ -5,6 +5,8 @@ heavily modified version of the code here:
     https://github.com/uenowataru/CollaborativeFiltering/blob/master/CollaborativeFiltering.py
 """
 
+import math
+
 import databases.Database as databases
 import math
 
@@ -25,24 +27,61 @@ class CollaborativeFilter:
         #only relevant to them, periodically purging itsself.
         self.cache = {}
 
+        #similarities is a dictionary in the form {username:dictionary{username:(similarity between user x and y)}}
+        #also might behove to rewrite this as an object that clears itsself overtime and does stuff based on active users
+        self.similarities = {}
+
+        #opinions is a dictionary in the form {username:dictionary{item:(predicted opinion of item by user)}}
+        self.opinions = {}
+
     def calculateOpinion(self, user, item):
         """
         """
         users = {person[0] for person in self.dbViewer.users()} - {user}
         print users
-        if user in self.cache:
-            return cache[user][item] if item in cache[user] else None
+        if user in self.opinions:
+            return self.opinions[user][item] if item in self.opinions[user] else None
         else:
-            pass
-            #users = [_calculateSimilarities(user, other) for other in users]
+            #calculate similarities between users (the simul function)
+            users = [self._calculateSimilarities(user, other) for other in users]
+            #
+
 
     def _calculateSimilarities(self, user, other):
         """
         Calculates the similarity between to users via the fitness function cos(vec(x), vec(y)):
         (sum[for i in the list of Items shared by users x and y](rating of x for i * rating of y for i))/((rss of rating(i) for i by x) * (rss of rating(i) for i by y)
         where rss is the root sum squared computed by sqrt(sum[for i in the list of Items rated by user u](rating of i by u)**2)
-        see cos.png.
+        see cos.png
         """
+
+        if user in self.similarities:
+            if other in self.similarities[user]:
+                return self.similarities[user][other]
+            else:
+                items = [column[0] for column in self.dbViewer.items()]
+                sharedItems = {item for item in items if self.dbViewer.currentOpinion(user,item) is not None} & {item for item in items if self.dbViewer.currentOpinion(other,item) is not None}
+                opinionSum = sum(self._fetchOpinion(user, item) * self._fetchOpinion(other, item) for item in sharedItems)
+                self.similarities[user][other] = opinionSum / (self._rss(user) * self._rss(other))
+                return self.similarities[user][other]
+        else:
+            self.similarities[user] = {}
+            items = [column[0] for column in self.dbViewer.items()]
+            sharedItems = {item for item in items if self.dbViewer.currentOpinion(user,item) is not None} & {item for item in items if self.dbViewer.currentOpinion(other,item) is not None}
+            opinionSum = sum(self._fetchOpinion(user, item) * self._fetchOpinion(other, item) for item in sharedItems)
+            self.similarities[user][other] = opinionSum / (self._rss(user) * self._rss(other))
+            return self.similarities[user][other]
+
+    def _rss(self, user):
+        return math.sqrt(sum(opinion**2 for opinion in self.dbViewer.currentOpinions(user) if opinion is not None))
+
+    def _fetchOpinion(self, user, item):
+        if user in self.cache:
+            return self.cache[user][item]
+        else:
+            items = (column[0] for column in self.dbViewer.items())
+            self.cache[user] = {item: self.dbViewer.currentOpinion(user, item) for item in items}
+            return self.cache[user][item]
         
 
 
@@ -50,9 +89,9 @@ class CollaborativeFilter:
 
 
 if __name__ == "__main__":
-    assert 258 ==  258
+    assert 1 == 1
     #do more
     x = CollaborativeFilter("database.db", "main", "databases/data")
     assert x.dbViewer.currentOpinions("them") == x.db.currentOpinions("them")
     print x.dbViewer.currentOpinions("them")
-    x.calculateOpinion("them",5)
+    print x._calculateSimilarities("them", "me")
