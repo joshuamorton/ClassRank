@@ -62,7 +62,6 @@ class CollaborativeFilter:
         where rss is the root sum squared computed by sqrt(sum[for i in the list of Items rated by user u](rating of i by u)**2)
         see cos.png
         """
-
         if user in self.similarities:
             if other in self.similarities[user]:
                 return self.similarities[user][other]
@@ -70,20 +69,20 @@ class CollaborativeFilter:
                 items = [column[0] for column in self.dbViewer.items()]
                 sharedItems = {item for item in items if self.dbViewer.currentOpinion(user,item) is not None} & {item for item in items if self.dbViewer.currentOpinion(other,item) is not None}
                 opinionSum = sum(self._fetchOpinion(user, item) * self._fetchOpinion(other, item) for item in sharedItems)
-                self.similarities[user][other] = opinionSum / (self._rss(user) * self._rss(other))
+                self.similarities[user][other] = opinionSum / (self._rss(user, sharedItems) * self._rss(other, sharedItems))
                 return self.similarities[user][other]
         else:
             self.similarities[user] = {}
             items = [column[0] for column in self.dbViewer.items()]
             sharedItems = {item for item in items if self.dbViewer.currentOpinion(user,item) is not None} & {item for item in items if self.dbViewer.currentOpinion(other,item) is not None}
             opinionSum = sum(self._fetchOpinion(user, item) * self._fetchOpinion(other, item) for item in sharedItems)
-            self.similarities[user][other] = opinionSum / (self._rss(user) * self._rss(other))
+            self.similarities[user][other] = opinionSum / (self._rss(user, sharedItems) * self._rss(other, sharedItems))
             return self.similarities[user][other]
 
-    def _rss(self, user):
+    def _rss(self, user, shared):
         """
         """
-        return math.sqrt(sum(opinion**2 for opinion in self.dbViewer.currentOpinions(user) if opinion is not None))
+        return math.sqrt(sum(self._fetchOpinion(user, item) ** 2 for item in shared))
 
     def _fetchOpinion(self, user, item):
         """
