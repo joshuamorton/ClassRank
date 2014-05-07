@@ -37,18 +37,13 @@ class CollaborativeFilter:
     def calculateOpinion(self, user, item):
         """
         """
-        if user in self.opinions:
-            if item in self.opinions[user]:
-                return self.opinions[user][item] if item in self.opinions[user] else None
-            else:
-                users = {person[0] for person in self.dbViewer.users()} - {user}
-                self.opinions[user][item] = self._k(user, users) * sum(self._calculateSimilarities(user, other) * self._fetchOpinion(other, item) for other in users)
-                return self.opinions[user][item]
-        else:
-            users = {person[0] for person in self.dbViewer.users()} - {user}
+
+        if user not in self.opinions:
             self.opinions[user] = {}
+        if item not in self.opinions[user]:
+            users = {person[0] for person in self.dbViewer.users()} - {user}
             self.opinions[user][item] = self._k(user, users) * sum(self._calculateSimilarities(user, other) * self._fetchOpinion(other, item) for other in users)
-            return self.opinions[user][item]
+        return self.opinions[user][item]
 
     def _k(self, user, users):
         """
@@ -62,22 +57,17 @@ class CollaborativeFilter:
         where rss is the root sum squared computed by sqrt(sum[for i in the list of Items rated by user u](rating of i by u)**2)
         see cos.png
         """
-        if user in self.similarities:
-            if other in self.similarities[user]:
-                return self.similarities[user][other]
-            else:
-                items = [column[0] for column in self.dbViewer.items()]
-                sharedItems = {item for item in items if self.dbViewer.currentOpinion(user,item) is not None} & {item for item in items if self.dbViewer.currentOpinion(other,item) is not None}
-                opinionSum = sum(self._fetchOpinion(user, item) * self._fetchOpinion(other, item) for item in sharedItems)
-                self.similarities[user][other] = opinionSum / (self._rss(user, sharedItems) * self._rss(other, sharedItems))
-                return self.similarities[user][other]
-        else:
+
+        if user not in self.similarities:
             self.similarities[user] = {}
+
+        if other not in self.similarities[user]:
             items = [column[0] for column in self.dbViewer.items()]
             sharedItems = {item for item in items if self.dbViewer.currentOpinion(user,item) is not None} & {item for item in items if self.dbViewer.currentOpinion(other,item) is not None}
             opinionSum = sum(self._fetchOpinion(user, item) * self._fetchOpinion(other, item) for item in sharedItems)
             self.similarities[user][other] = opinionSum / (self._rss(user, sharedItems) * self._rss(other, sharedItems))
-            return self.similarities[user][other]
+        return self.similarities[user][other]
+
 
     def _rss(self, user, shared):
         """
