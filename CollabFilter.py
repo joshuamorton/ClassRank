@@ -7,7 +7,7 @@ heavily modified version of the code here:
 
 import math
 
-import databases.Database as databases
+import databases.database as databases
 import math
 
 class CollaborativeFilter:
@@ -47,6 +47,7 @@ class CollaborativeFilter:
 
     def _k(self, user, users):
         """
+        Calculates the k value (1/ sum(similarities)) for the 
         """
         return 1.0 / sum(self._calculateSimilarities(user, other) for other in users)
 
