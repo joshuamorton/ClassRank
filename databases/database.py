@@ -344,26 +344,20 @@ if __name__ == "__main__":
     database.newField("CS1333")
     database.newField("CS1334")
     database.newField("CS1335")
-    database.changeOpinion("one", "CS1331", 5)
-    database.changeOpinion("one", "CS1332", 5)
-    database.changeOpinion("one", "CS1333", 5)
-    database.changeOpinion("one", "CS1334", 5)
-    database.changeOpinion("one", "CS1335", 5)
-    database.changeOpinion("two", "CS1331", 3)
-    database.changeOpinion("two", "CS1332", 3)
-    database.changeOpinion("two", "CS1333", 3)
-    database.changeOpinion("two", "CS1334", 3)
-    database.changeOpinion("two", "CS1335", None)
-    database.changeOpinion("three", "CS1331", 5)
-    database.changeOpinion("three", "CS1332", 5)
-    database.changeOpinion("three", "CS1333", 5)
-    database.changeOpinion("three", "CS1334", 5)
-    database.changeOpinion("three", "CS1335", 5)
-    database.changeOpinion("four", "CS1331", 5)
-    database.changeOpinion("four", "CS1332", 5)
-    database.changeOpinion("four", "CS1333", 5)
-    database.changeOpinion("four", "CS1334", 5)
-    database.changeOpinion("four", "CS1335", 5)
+    users = ["one", "two", "three", "four"]
+    classes = ["CS1331", "CS1332", "CS1333", "CS1334", "CS1335"]
+
+    counter = 0
+    for user in users:
+        for eachClass in classes:
+            database.changeOpinion(user, eachClass, counter)
+            counter += 1
+
+    for user in users:
+        for eachClass in classes:
+            assert database.currentOpinion(user, eachClass) == database.currentOpinion(user, eachClass)
+
+    assert database.currentOpinion(users[2], classes[3]) == 13
 
 
 
