@@ -124,7 +124,8 @@ class Database(object):
 
     def _connect(self):
         """
-        Establishes a connection to the table and sets the .db and .cursor values
+        Establishes a connection to the table and sets the .db and .cursor values which are global for the database
+        object.
         """
 
         self.db = sqlite3.connect(self.path)
@@ -146,7 +147,7 @@ class Database(object):
             the new name
 
         Arguments:
-            name - the username of the new user
+            name -> the username of the new user
         """
 
         if name not in self:
@@ -159,7 +160,7 @@ class Database(object):
     def _questionMarks(self):
         """
         Helper method that creates a comma seperated list of question marks for SQL parameterization.  The number of
-            question marks is 1 for username + the number of additional columns.
+            question marks is 1 for username + the number of additional columns.  This is sloppy.
         """
         return ",".join("?" for x in xrange(self.tableLength+1))
 
@@ -227,8 +228,7 @@ class Database(object):
 
     def __contains__(self, user):
         """
-        For an user returns True if an item of that name is in the table, otherwise
-            returns False
+        For an user returns True if an item of that name is in the table, otherwise returns False
         """
         
         self.cursor.execute('''SELECT * FROM {table} where {username} = ?'''

@@ -1,8 +1,6 @@
 """
 The collaborative filtering portion of the system.
-Should always eb used with databases
-heavily modified version of the code here:
-    https://github.com/uenowataru/CollaborativeFiltering/blob/master/CollaborativeFiltering.py
+Should always be used with databases.database
 """
 
 import math
@@ -12,11 +10,27 @@ import math
 
 class CollaborativeFilter:
     """
-    A Collaborative Filtering algorithm/object meant to be heavily optimized for speedx
+    A Collaborative Filtering algorithm/object meant to be heavily optimized for speed
     """
 
     def __init__(self, database, table, folder):
         """
+        Initializes the db and dbviewer (kinda redundant) objects and the 3 caches for each database.
+        The system works a bit like this:
+        the collaborative filtering code can be divided up into 3 steps, 
+
+        the first is finding current opinions, this is done from self.opinions if possible and then from the database.
+
+        next, you find the similarities between any set of users.  If they are cached, they are taken from self.similarities,
+            otherwise they are gathered by using self._calculateSimilarities
+
+        finally, you calculate the rating that a person has for a given object.  This is stored in self.cache, or if needed
+            calculated from self.calculateOpinion, this is the one that mot people will be interfacing with
+
+        Arguments:
+            database -> the name of the database file
+            table    -> the name of the table in the database file
+            folder   -> the system path from this file to the database file
         """
         self.dbViewer = databases.Viewer(database, table, folder)
         self.db = databases.Database(database, table, folder)
@@ -36,6 +50,7 @@ class CollaborativeFilter:
 
     def calculateOpinion(self, user, item):
         """
+        returns the opinion a user has for an item (as a float) based on the opinions of other users and their weighted similarities
         """
 
         if user not in self.opinions:
@@ -47,7 +62,7 @@ class CollaborativeFilter:
 
     def _k(self, user, users):
         """
-        Calculates the k value (1/ sum(similarities)) for the 
+        Calculates the k value (1/ sum(similarities)) for the user whose opinion we are finding
         """
         return 1.0 / sum(self._calculateSimilarities(user, other) for other in users)
 
@@ -72,11 +87,14 @@ class CollaborativeFilter:
 
     def _rss(self, user, shared):
         """
+        calculates the root sum squared of a number of values (in this case user opinions), used in calculating the k value
+        that is in pseudopython, sqrt(sum((x**2) for x in user.opinions))
         """
         return math.sqrt(sum(self._fetchOpinion(user, item) ** 2 for item in shared))
 
     def _fetchOpinion(self, user, item):
         """
+        for a given user, finds their opinion of an item in the database or cache.
         """
         if user in self.cache:
             return self.cache[user][item]
@@ -94,5 +112,4 @@ if __name__ == "__main__":
     assert 1 == 1
     #do more
     x = CollaborativeFilter("database.db", "main", "databases/data")
-    print x.calculateOpinion("two", "CS1335")
-    print x.calculateOpinion("three", "CS1334")
+    assert x.dbViewer.name == x.db.name
