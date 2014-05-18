@@ -1,0 +1,40 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+\usepackage{color}
+\usepackage{mathtools}
+\usepackage{listings}
+
+\title{Online Collaborative Filtering}
+\author{Joshua Morton}
+\date{05/15/2014}
+\begin{document}
+  \newcommand{\simil}{simil(u, u^{'})}
+  \newcommand{\similarity}{$\simil$ }
+  \maketitle
+  This outlines some of the mathematics used in the online collaborative filter used in other areas of this tool.  This is both for my sanity and a way to outline and think through some of the mathematics used elswhere in the codebase.  To begin with, I'll outline the collaborative filtering code as a whole.
+  \newline
+  \indent The estimated opinion, $ r $, by user $ u $ of an item $ i $ is defined below, where $ U $ is the set of all users that are not $ u $.
+  \begin{displaymath}
+    r_{u, i} = k \sum_{u^{'} \in U} \simil r_{u, i}
+  \end{displaymath}
+  \indent This function makes use of two additional functions, $ \simil \text{ and } k $.  \similarity operates over the set $ I $, which is defined as the intersection of the sets of objects that have previously been rated by both $ u \text{ and } u^{'} $
+  \begin{displaymath}
+    k = \frac{1}{\sum \limits_{u^{'} \in U} |\simil|}
+  \end{displaymath}
+  \begin{displaymath}
+    \simil = \frac{\sum \limits_{i^{'} \in I} (r_{u, i}) (r_{u^{'}, i})}{rss(u) \times rss(u^{'})}
+  \end{displaymath}
+  \indent In this case, $rss$ signifies the root sum squares of all ratings for that user.  Here, $S$ refers to the set of all items rated by a given user.  To put this mathematically:
+  \begin{displaymath}
+    rss(u) = \sqrt{\sum \limits_{i \in S} r_{u, i}^2}
+  \end{displaymath}
+  \indent Putting this all together, we get that the formula to calculate the rating for a given item at any time can be expressed as
+  \begin{displaymath}
+    r_{u, i} = \frac{\sum \limits_{u^{'} \in U} (\simil \cdot r_{u, i})}{\sum \limits_{u^{'} \in U} |\simil|}
+  \end{displaymath}
+  \indent  This expands to the awful looking and disgusting piece of math that is
+  \begin{displaymath}
+    r_{u, i} = \frac{\sum \limits_{u^{'} \in U} (\frac{\sum \limits_{i^{'} \in I} (r_{u, i}) (r_{u^{'}, i})}{\sqrt{\sum \limits_{i \in S} r_{u, i}^2} \sqrt{\sum \limits_{i \in S} r_{u^{'}, i}^2}} \cdot r_{u, i})}{\sum \limits_{u^{'} \in U} |\frac{\sum \limits_{i^{'} \in I} (r_{u, i}) (r_{u^{'}, i})}{\sqrt{\sum \limits_{i \in S} r_{u, i}^2} \sqrt{\sum \limits_{i \in S} r_{u^{'}, i}^2}}|}
+  \end{displaymath}
+  \indent Much of this is repetetive code and can be made into functions, but this is still obiviously worst case $\mathcal{O}(n^2)$ to calculate.  That cannot be changed, but through some clever mathematics, the speed with which an opinion can be calulated can be heavily improved,
+ \end{document}
