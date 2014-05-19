@@ -134,10 +134,11 @@
   \p The second matrix, referred to as the \textbf{Similarity Matrix} contains calculated similarities between users.  It has the structure Map(User $\to$ Map(User $\to$ Similarity)).  
   \p The final matrix contains the predicted opinions that a user would have for an item and is called the \textbf{Calculated Matrix}.  It is structured as Map(User $\to$ Map(Item $to$ Rating)), similar to the first matrix, but the calculated values will differ from the actual values and the matrix has an arbitrary sparsity, as opposed to being only as full as the users provide information.
 
-  \subsection{Get a Known Opinion}
+  \subsection{Similarity Operations}
+  \subsubsection{Get a Known Opinion}
   \indent\indent This is entirely unchanged, much like normal, this simply requests the opinion from the lowest matrix or returns a null value if the item is not in the matrix.  Nothing difficult here.
 
-  \subsection{Predict an Opinion}
+  \subsubsection{Predict an Opinion}
   \indent\indent This too works similar to the example.  The main difference is that calculations become a fallback and instead the algorithm attempts to get relevant information from higher-level matrices if possible.  For example, instead of calculating user A's similarity to user B, the algorithm will first check the \textbf{Similarity Matrix} before actually dropping down and calculating the values itself.  In python pseudocode, this might look like this:
   \begin{lstlisting}[language=python]
 def calculateOpinion(user, item):
@@ -155,11 +156,12 @@ def similarity(user, other):
     sum(rating(user, item) * ... for item in items)
 
 def rating(user, item):
-  reutrn OpinionMatrix[user][item]
+  reuturn OpinionMatrix[user][item]
   \end{lstlisting}
   \indent The important thing to note (other than my unnatural love for generator expressions) is that in each minor function, the calculation of the opinion, similarity, and rating, you can first search a cache.  This means that when calculating an opinion, if the opinion is known, the operation becomes \Oh{1}.  If all similarities between users are known, the operation becomes \Oh{n}.  This is a well known method of dynamic programming.  The difficult portion is in keeping the caches updated and keeping clashes from occurring.
 
-  \subsection{Change an Opinion}
+  \subsubsection{Change an Opinion}
+  \label{Change an Opinion}
   \indent\indent  The method for changing an opinion is not easy.  With a cache free variant, it is simple, you change the opinion and moving forward, all newly calculated ratings use the new opinion.  Indeed, this setup could be easily changed to work similarly, simply by updating the lowest level matrix when an opinion changes and then removing any similarity values and calculated ratings that propagated from that user.  The problem is that this would invalidate most, if not all, calculated ratings any time the Opinion Matrix changed, making the system significantly less useful.
   \p Instead, lets talk for a second about the similarity between two users.  Given two users $x$ and $y$, who have opinions on 4 items, there is a similarity value between them.  This similarity value can be expressed as
   \begin{displaymath}
@@ -178,8 +180,37 @@ def rating(user, item):
   \begin{displaymath}
     rss(x)_{new} = \sqrt{rss(x)_{old}^2 - o^2 + n^2}
   \end{displaymath}
-  \p This too requires only a constant number of database calls.  It is important to note that the $rss$ is constant and needs only be stored once for any given person, while $a$ is dependent on each pair of users and so needs to be stored individually in a table.  This means slight modifications to the previous method of storage, but they are relatively minor and so I won't go into them.  
+  \p This too requires only a constant number of database calls.  It is important to note that although it looks like $rss$ should be a constant value for a given user, because of the way the rss is calculated (that it is based on the shared items) it must be stored on an individual basis for every user pair.
 
-  \subsection{Adding a New Opinion}
-  \indent\indent The final, and most complex form of change is the addition or removal of an opinion.  By this I mean that an opinion is changed from null to a value, or from a value to null.  Both work similarly, but I'll cover additions of new opinions first.  
+  \subsubsection{Add a New Opinion}
+  \label{Add a New Opinion}
+  \indent\indent The final, and most complex form of change is the addition or removal of an opinion.  By this I mean that an opinion is changed from null to a value, or from a value to null.  Both work similarly, but I'll cover additions of new opinions first.  Its very similar to a change in opinion in that you have $simil(x, y) = \frac{a}{b}$ where $a$ and $b$ are the portions of the larger fraction.  The calculation of them is slightly different however, because in addition to changing an opinion you are changing the domain of the functions.
+  \p The $rss$ and $a$ functions iterate over the set $I$ of items that have been rated by both users.  When either user rates a new item, this set changes and so prior ratings are rendered inaccurate.   If the newly rated item is not shared (for example if user $a$ rates a new item that user $y$ never provided a rating) then nothing changes and you fall back on the method outlined in \ref{Change an Opinion}.  Otherwise you need to take additional steps.
+  \p Calculating $a$ becomes this:
+  \begin{displaymath}
+    a_{new} = a_{old} + r_{x, n}r_{y, n}
+  \end{displaymath}
+  \p In this case, $n$ is represented as $r_{x, n}$ and user $x$'s rating for the same item $n$ is represented as $r_{y, n}$.  Similarly, $rss(x)$ becomes 
+  \begin{displaymath}
+    rss(u) = \sqrt{rss(u)_{old}^2+r_{u, n}^2}
+  \end{displaymath}
+  \p The rss needs to be recalculated for both users since the new item $n$ is new to both of them.  Also note that the same thing essentially happens on both the top and bottom of the fraction.  If the entire fraction were written out it becomes obvious that on both the top and bottom of the fraction, there is an addition of the multiplication of the new ratings.  The operations are not exactly the same, but are very similar.
+  \begin{displaymath}
+    \Delta simil(x, y) = \frac{\Delta a}{\Delta b} = \frac{a_{old} + r_{x, n}r_{y, n}}{\sqrt{rss(x)_{old}^2+r_{x, n}^2}\sqrt{rss(y)_{old}^2+r_{y, n}^2}}
+  \end{displaymath}
+
+  \subsubsection{Remove an Old Opinion}
+  \indent\indent This is almost exactly like the methods in \ref{Add a New Opinion}, but in reverse.  If the item removed was not shared, then nothing changes.  Otherwise, $o$ needs to be removed from both $rss$ and $a$.  This is done as follows:
+  \begin{displaymath}
+    \Delta simil(x, y) = \frac{\Delta a}{\Delta b} = \frac{a_{old} - r_{x, o}r_{y, o}}{\sqrt{rss(x)_{old}^2-r_{x, o}^2}\sqrt{rss(y)_{old}^2-r_{y, o}^2}}
+  \end{displaymath}
+  That is basically all that there is to it.
+
+  \subsection{Calculating Ratings}
+  \indent\indent 
+
+
+  \pagebreak
+  \section{Implementation}
+
  \end{document}
