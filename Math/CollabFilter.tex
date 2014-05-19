@@ -120,15 +120,66 @@
 
   \pagebreak
   \section{An Analysis of Operations}
-  \indent In its current form, any time you wish to take data from the table, you need to calculate this $\mathcal{O}(n^2)$ (technically, its $m \times n$, but in this case we assume that $m \text{ and } n$ are of similar size.  This may not be the case, but it works for the example.) operation.  This is not a great situation, as for medium to large datasets (say, $n = 10000$), the algorithm can become slow since, even with some steps taken to increase the algorithm's efficiency, 100,000,000 operations for each database query is a tad steep.  
+
+  \indent\indent In its current form, any time you wish to take data from the table, you need to calculate this $\mathcal{O}(n^2)$ (technically, its $m \times n$, but in this case we assume that $m \text{ and } n$ are of similar size.  This may not be the case, but it works for the example.) operation.  This is not a great situation, as for medium to large datasets (say, $n = 10000$), the algorithm can become slow since, even with some steps taken to increase the algorithm's efficiency, 100,000,000 operations for each database query is a tad steep.  
   \p There are multiple ways to combat this.  A common approach is to use a k-nearest neighbor based approach.  This uses a linear algorithm to calculate the k-nearest neighbors to any given user and only runs in \Oh{n \times k} where k is a value of your choice, a significant improvement.  The trade off is that there is a possible loss of accuracy depending on the size of the dataset.  This loss is probably small, but in sparser, smaller datasets will be large enough to possible cause problems.
-  \p In this I outline an alternative method.  By using a combination of threaded queues and multilevel caches, you can keep completely accurate information and calculate, update, and change values in significantly less than \Oh{n^{2}} time.  To begin, there are a number of functions that a useful Collaborative Filter must implement.  You must be able to \textbf{Predict an Opinion}, \textbf{Change an Opinion}, and \textbf{Get a Known Opinion}.  
+  \p In this I outline an alternative method.  By using a combination of threaded queues and multilevel caches, you can keep completely accurate information and calculate, update, and change values in significantly less than \Oh{n^{2}} time.  To begin, there are a number of functions that a useful Collaborative Filter must implement.  You must be able to \textbf{Predict an Opinion}, \textbf{Change an Opinion} \textbf{Get a Known Opinion}, \textbf{Add a New Opinion} and \textbf{Remove an Old Opinion}.  
   \p The downside to the method outlined here is that in some cases you will have slightly outdated information, depending on the number of changes happening to the database during your query.  This would be the case no matter what, since at scale caching is necessary anyway, but this problem may be exacerbated by the method outlined.
 
   \subsection{The Data Structure}
-  \indent The collaborative filter is built as a series of stacked matrices.  These can be implemented in any way, either as caches in memory, persistent databases, etc.  The examples work off of a model where each matrix is a cache in memory implemented as a two-dimensional hash-table.  These caches start empty, and are filled partially as calls are made to the database.  In other words, when the structure is created, the tables are empty, but after a call for user \textbf{U}, \textbf{cache[U]} would be filled.
+
+  \indent\indent The collaborative filter is built as a series of stacked matrices.  These can be implemented in any way, either as caches in memory, persistent databases, etc.  The examples work off of a model where each matrix is a cache in memory implemented as a two-dimensional hash-table.  These caches start empty, and are filled partially as calls are made to the database.  In other words, when the structure is created, the tables are empty, but after a call for user \textbf{U}, \textbf{cache[U]} would be filled.
   \p To reiterate, this is by no means the only way to implement such a cache.  They could be created and fully filled at creation, but this was, in my opinion, a good method that had only minor losses in either space or time efficiency.
   \p There are three levels of matrices.  The first one is the \textbf{Opinion Matrix}.  This Matrix contains the concrete opinions that people hold.  It would be implemented with the structure Map(User $\to$ Map(Item $\to$ Rating)).  
   \p The second matrix, referred to as the \textbf{Similarity Matrix} contains calculated similarities between users.  It has the structure Map(User $\to$ Map(User $\to$ Similarity)).  
   \p The final matrix contains the predicted opinions that a user would have for an item and is called the \textbf{Calculated Matrix}.  It is structured as Map(User $\to$ Map(Item $to$ Rating)), similar to the first matrix, but the calculated values will differ from the actual values and the matrix has an arbitrary sparsity, as opposed to being only as full as the users provide information.
+
+  \subsection{Get a Known Opinion}
+  \indent\indent This is entirely unchanged, much like normal, this simply requests the opinion from the lowest matrix or returns a null value if the item is not in the matrix.  Nothing difficult here.
+
+  \subsection{Predict an Opinion}
+  \indent\indent This too works similar to the example.  The main difference is that calculations become a fallback and instead the algorithm attempts to get relevant information from higher-level matrices if possible.  For example, instead of calculating user A's similarity to user B, the algorithm will first check the \textbf{Similarity Matrix} before actually dropping down and calculating the values itself.  In python pseudocode, this might look like this:
+  \begin{lstlisting}[language=python]
+def calculateOpinion(user, item):
+  if item in user in CalculatedMatrix:
+    return CalculatedMatrix[user][item]
+  else:
+    //calculate the result from this
+    sum(similarity(user, other) for other in users)
+
+def similarity(user, other):
+  if other in user in SimilarityMatrix:
+    return SimilarityMatrix[user][other]
+  else:
+    //calculate the similarity value as outlined
+    sum(rating(user, item) * ... for item in items)
+
+def rating(user, item):
+  reutrn OpinionMatrix[user][item]
+  \end{lstlisting}
+  \indent The important thing to note (other than my unnatural love for generator expressions) is that in each minor function, the calculation of the opinion, similarity, and rating, you can first search a cache.  This means that when calculating an opinion, if the opinion is known, the operation becomes \Oh{1}.  If all similarities between users are known, the operation becomes \Oh{n}.  This is a well known method of dynamic programming.  The difficult portion is in keeping the caches updated and keeping clashes from occurring.
+
+  \subsection{Change an Opinion}
+  \indent\indent  The method for changing an opinion is not easy.  With a cache free variant, it is simple, you change the opinion and moving forward, all newly calculated ratings use the new opinion.  Indeed, this setup could be easily changed to work similarly, simply by updating the lowest level matrix when an opinion changes and then removing any similarity values and calculated ratings that propagated from that user.  The problem is that this would invalidate most, if not all, calculated ratings any time the Opinion Matrix changed, making the system significantly less useful.
+  \p Instead, lets talk for a second about the similarity between two users.  Given two users $x$ and $y$, who have opinions on 4 items, there is a similarity value between them.  This similarity value can be expressed as
+  \begin{displaymath}
+    simil(x, y) = \frac{r_{x, a}r_{y, a} + r_{x, b}r_{y, b} + r_{x, c}r_{y, c} + r_{x, d}r_{y, d}}{
+      \sqrt{r_{x, a}^2+r_{x, b}^2+r_{x, c}^2+r_{x, d}^2}
+      \sqrt{r_{y, a}^2+r_{y, b}^2+r_{y, c}^2+r_{y, d}^2}
+    }
+  \end{displaymath}
+  \p This can be generalized as necessary.  What it means is that for any given pair of people, their similarities can be unpacked into a set of values.  When one singular value changes, you can use the unpacked form and change only a small number of values instead of recalculating everything from nulls.
+  \p The problem with this is that you cannot simply store \similarity.  Instead, you need to store it in a special form as a non-reduced fraction.  This is because you lose some information when you divide the top portion by the bottom portion, you cannot unpack without making database calls and multiple calculations.  This is actually quite simple, it requires storing similarity not as a single number, but as two separate numbers.
+  \begin{displaymath}
+    \simil = \frac{\sum \limits_{i^{'} \in I} (r_{u, i}) (r_{u^{'}, i})}{rss(u) \times rss(u^{'})} = \frac{a}{b}
+  \end{displaymath}
+  \p In this situation, $a$ and $b$ represent the top and bottom of the fractional value of the similarity.  The user $x$ has changed their opinion of item $i$.  The old opinion will be called $o$ and the new one $n$.  To change $a$ from the old value to the new one, you simply take $a_{new} = a_{old} - o\times r_{y, i} + n\times r_{y, i}$  Refactoring you get $a_{new} = a_{old} + r_{y, i}(n - o)$.  This takes only \Oh{1} time, two database calls, one for $o$ and one for $r_{y, i}$.  
+  \p Calculating $\Delta b$ is a tad more difficult.  Much like before, where you had $\frac{a}{b}$ and lost information, in the multiplication of $rss(x)\times rss(y)$ there is once more a loss of information.  By storing both of those values, $rss(x)$ and $rss(y)$ we avoid any problem.  $rss(y)$ remains unchanged and can be gathered via database call, and to calculate $\delta rss(x)$ the following works:
+  \begin{displaymath}
+    rss(x)_{new} = \sqrt{rss(x)_{old}^2 - o^2 + n^2}
+  \end{displaymath}
+  \p This too requires only a constant number of database calls.  It is important to note that the $rss$ is constant and needs only be stored once for any given person, while $a$ is dependent on each pair of users and so needs to be stored individually in a table.  This means slight modifications to the previous method of storage, but they are relatively minor and so I won't go into them.  
+
+  \subsection{Adding a New Opinion}
+  \indent\indent The final, and most complex form of change is the addition or removal of an opinion.  By this I mean that an opinion is changed from null to a value, or from a value to null.  Both work similarly, but I'll cover additions of new opinions first.  
  \end{document}
