@@ -207,8 +207,17 @@ def rating(user, item):
   That is basically all that there is to it.
 
   \subsection{Calculating Ratings}
-  \indent\indent 
-
+  \indent\indent Calculating similarities is great and all, but it is only a single level.  Essentially, we can now be certain that every similarity is valid, but cached predictions may be outdated.  Each individual prediction can be redone in \Oh{n} by recalculating from the new similarities.  This takes \Oh{n^2} time overall, n for each person, and it can be done in \Oh{n} overall, constant for each user.
+  \p First, realize that for every user $u^{'}$ whose opinion was not changed, their similarity changes only in relation to a single user.  For user $u$ whose opinion was changed, every similarity also changes and so it takes a minimum of \Oh{n} because there are $n$ other users.  However, for every other user we can take advantage of the fact that $simil(x, y) = simil(y, x)$ and that only a single similarity is changing.  
+  \p Returning to the earlier formula
+  \begin{displaymath}
+    r_{u, i} = \frac{\sum \limits_{u^{'} \in U} (\simil \cdot r_{u, i})}{\sum \limits_{u^{'} \in U} |\simil|}
+  \end{displaymath}
+  \p We can see that, if the old similarity between two users $x$ and $y$ is called $simil_{old}(x, y)$ and the new one is $simil_{new}(x, y)$, and the old rating $o$ and new rating $n$ are as we've called them, then the new similarity can be calculated as such:
+  \begin{displaymath}
+    r_{new} = \frac{\sum \limits_{u^{'} \in U} (\simil \cdot r_{u, i}) - simil_{old}(x, y) \times o + simil_{new}(x, n) \times n}{\sum \limits_{u^{'} \in U} |\simil| - simil_{old}(x, y) + simil_{new}(x, n)}
+  \end{displaymath}
+  \p This is a constant time method to update the rating for a given user whose opinion was not changed.  In this case as well, you need to store two values, $\sum \limits_{u^{'} \in U} (\simil \cdot r_{u, i})$ and separately $\sum \limits_{u^{'} \in U} |\simil|$
 
   \pagebreak
   \section{Implementation}
