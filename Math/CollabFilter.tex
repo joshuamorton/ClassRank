@@ -217,7 +217,7 @@ def rating(user, item):
   \begin{displaymath}
     r_{new} = \frac{\sum \limits_{u^{'} \in U} (\simil \cdot r_{u, i}) - simil_{old}(x, y) \times o + simil_{new}(x, n) \times n}{\sum \limits_{u^{'} \in U} |\simil| - simil_{old}(x, y) + simil_{new}(x, n)}
   \end{displaymath}
-  \p This is a constant time method to update the rating for a given user whose opinion was not changed.  In this case as well, you need to store two values, $\sum \limits_{u^{'} \in U} (\simil \cdot r_{u, i})$ and separately $\sum \limits_{u^{'} \in U} |\simil|$
+  \p This is a constant time method to update the rating for a given user whose opinion was not changed.  In this case as well, you need to store two values, $\sum \limits_{u^{'} \in U} (\simil \cdot r_{u, i})$ and separately $\sum \limits_{u^{'} \in U} |\simil|$.  This is only a minor increase in space used though.  
 
   \pagebreak
   \section{Implementation}
