@@ -3,5 +3,4 @@
 
 #except gitignore
 !.gitignore
-!*.pdf
 !*.tex
