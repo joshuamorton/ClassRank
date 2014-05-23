@@ -224,6 +224,13 @@ class Database(object):
             .format(table = self.table, fields = self._fields(), username = self.usernameField, item=item), 
             tuple([value,user]))
         self.db.commit()
+
+    def users(self):
+        """
+        returns a list of usernames
+        """
+        return [name for name in self.cursor.execute('''SELECT {username} FROM {table}'''
+            .format(table = self.table, username = self.usernameField))]
     
 
     def __contains__(self, user):
@@ -345,19 +352,19 @@ if __name__ == "__main__":
     database.newField("CS1334")
     database.newField("CS1335")
     users = ["one", "two", "three", "four"]
-    classes = ["CS1331", "CS1332", "CS1333", "CS1334", "CS1335"]
+    classes = ["CS1331", "CS1332", "CS1333", "CS1334"]
+    vals = [1,2,3,5,1,0,3,5,1,1,1,1,5,5,5,5]
 
     counter = 0
     for user in users:
         for eachClass in classes:
-            database.changeOpinion(user, eachClass, counter)
+            database.changeOpinion(user, eachClass, vals[counter])
             counter += 1
 
     for user in users:
         for eachClass in classes:
             assert database.currentOpinion(user, eachClass) == database.currentOpinion(user, eachClass)
 
-    assert database.currentOpinion(users[2], classes[3]) == 13
 
 
 
