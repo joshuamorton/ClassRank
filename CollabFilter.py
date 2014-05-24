@@ -22,9 +22,8 @@ class CollaborativeFilter:
             table -> the name of the table in the database file
             debug -> activates debug mode, providing additional outputs and information about what is happening
             cache -> used for testing, to compare between the caches being used and a normal, cache free version
-                        both for benchmarking and for error checking
+                     both for benchmarking and for error checking
         """
-
 
         self.name = name
         self.path = path
@@ -46,6 +45,7 @@ class CollaborativeFilter:
         #implemented as map(user1->map(item->tuple(sum(simil*opinions[user][item] for user in users), sum(simil for user in users))))
         self.calculated = {}
 
+
     def fetchOpinion(self, user, item): #done
         """
         Directly fetches an opinion from the database
@@ -54,12 +54,13 @@ class CollaborativeFilter:
             user -> the user who has an opinion
             item -> the item of which they have an opinion
 
-        return a value representing the user's opinion of the item, or none if the user has no opinion
+        Return -> a value representing the user's opinion of the item, or none if the user has no opinion
         """
+
         return self.db.currentOpinion(user, item)
 
 
-    def predictOpinion(self, user, item): #done except for the cache disabled (needs refactoring) needs docs
+    def predictOpinion(self, user, item): #done except for the cache disabled (needs refactoring)
         """
         Calculates a user's opinion of an item based on the collaborative filtering algorithm.  Uses caches if possible
             and falls back to the long method of calculation if necessary
@@ -67,7 +68,10 @@ class CollaborativeFilter:
         Arguments:
             user -> the user whose opinion is to be calculated
             item -> the item of which the user has an unknown opinion
+
+        Return -> the opinion that a user should have for an item based on collaborative filtering
         """
+
         if (self.cache == True):
             if user in self.calculated:
                 if item in self.calculated[user]:
@@ -95,16 +99,22 @@ class CollaborativeFilter:
             sumSimilarities -> The second value in self.calculated, which represents
                                sum(simil(u, u') for u' in Users)
 
-        returns r[u][i], the rating that user u would give to item i
+        Return -> r[u][i], the rating that user u would give to item i
         """
 
         #forces floating point division
         return float(weightedRatings) / sumSimilarities
 
 
-    def _calculateWeights(self, user, item): #done needs docs
+    def _calculateWeights(self, user, item): #done
         """
-        returns a tuple (self._ratingTop(user, item), self._ratingBottom(user, item))
+        Calculates the weightedRatings and sum of similarities for a given user based on all of the other users
+
+        Arguments:
+            user -> the user for which you are calulating an opinion
+            item -> the item that the user does not have an opinion of
+
+        Return -> a tuple (self._ratingTop(user, item), self._ratingBottom(user, item))
         """
         
         #create the users and items sets
@@ -122,29 +132,36 @@ class CollaborativeFilter:
             user -> the user whose opinion is to be calculated
             item -> the item of which the user has an unknown opinion
 
-        Returns the top portion of the calculated opinion
+        Return -> the top portion of the calculated opinion
         """
 
         #get the items shared by both users
         return sum(self._similarity(user, other) * self._opinion(other, item) for other in users)
 
 
-    def _ratingBottom(self, user, item, users): #done, needs docs
+    def _ratingBottom(self, user, item, users): #done
         """
+        Calcuates the sum of the similarities between users for a given user/item pair
 
         Arguments:
             user -> the user whose opinion is to be calculated
             item -> the item of which the user has an unknown opinion
+
+        Return -> the bottom portion of the rating
         """
+
         return sum(self._similarity(user, other) for other in users)
 
 
-    def _similarity(self, user, other): #done (needs refactoring) needs docs
+    def _similarity(self, user, other): #done (needs refactoring)
         """
+        Calulates the similarity for a given pair of users
+
         Arguments:
             user  -> the user whose opinion is being calculated
             other -> the other user to whom the user is being compared
 
+        Return -> the similarity between user and other
         """
         
         if user in self.similarities:
@@ -159,9 +176,16 @@ class CollaborativeFilter:
             return self._calculateSimilarity(*self.similarities[user][other])
 
 
-    def _calculateSimilarity(self, rssUser, rssOther, multSum): #done needs docs
+    def _calculateSimilarity(self, rssUser, rssOther, multSum): #done
         """
         calculates the similarity between users based on the rss and multSum values
+
+        Arguments:
+            rssUser  -> the root sum squared of the ratings of items for the given user
+            rssOther -> the root sum squared of the ratings of items for the other used
+            multsum  -> the sum of the multiplication of the rating by user and other for an item ie. r{u, i} * r{o, i}
+
+        Return -> the similarity value between two users
         """
 
         return multSum / (rssUser * rssOther)
@@ -170,6 +194,12 @@ class CollaborativeFilter:
     def _setSimilarities(self, user, other): #done
         """
         seperately calculate rss(user), rss(other), and multsum(user, other) and return them
+
+        Arguments:
+            user  -> a user whose opinion is being predicted
+            other -> the user to whom user is being compared
+
+        Return -> tuple(rss(user), rss(other), multsum(user, other))
         """
 
         items = items = [column[0] for column in self.db.items()]
@@ -180,15 +210,32 @@ class CollaborativeFilter:
         return (userRss, otherRss, multsum)
 
         
-    def _rss(self, user, shared): #done, needs docs
+    def _rss(self, user, shared): #done
         """
+        Calulates the root sum squred of the ratings for the given user of the items they share with the other user
+
+        Arguments:
+            user   -> a user who has opinions on items
+            shared -> the list of items shared with another user to whom they are being compared
+
+        Return -> rss(user) over the shared items with other
         """
+
         return math.sqrt(sum(self._opinion(user, item) ** 2 for item in shared))
 
 
-    def _multSum(self, user, other, shared): #done, needs docs
+    def _multSum(self, user, other, shared): #done
         """
+        Calulates the sum of the values or r{u, i} * r{o, i} for all shared items
+
+        Arguments:
+            user   -> the user whose opinion is being predicted
+            other  -> a user to whome user is being compared
+            shared -> the set of items shared by the two users
+
+        Return -> the sum of the multiples of the ratings of both users
         """
+
         return sum(self._opinion(user, item) * self._opinion(other, item) for item in shared)
 
 
@@ -199,8 +246,10 @@ class CollaborativeFilter:
         Arguments:
             user -> a user whose opinion we want
             item -> the item for which we want their opinion
-    
+
+        Return -> the opinion a user has for an item based directly on the database, either a number or 0 representing a null value
         """
+
         if user in self.opinions:
             if item in self.opinions[user]:
                 return self.opinions[user][item]
@@ -221,9 +270,4 @@ class CollaborativeFilter:
 
     
 if __name__=="__main__":
-    cf = CollaborativeFilter("database.db", "databases/data", "main")
-    users = ["one", "two", "three", "four"]
-    classes = ["CS1331", "CS1332", "CS1333", "CS1334"]
-    for user in users:
-        for clazz in classes:
-            sys.stdout.write(user+" "+clazz+" - "+str(cf.predictOpinion(user, clazz))+"\n")
+    pass
