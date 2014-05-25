@@ -60,7 +60,7 @@ class CollaborativeFilter:
         return self.db.currentOpinion(user, item)
 
 
-    def predictOpinion(self, user, item): #done except for the cache disabled (needs refactoring)
+    def predictOpinion(self, user, item): #done except for when the cache is disabled
         """
         Calculates a user's opinion of an item based on the collaborative filtering algorithm.  Uses caches if possible
             and falls back to the long method of calculation if necessary
@@ -73,19 +73,13 @@ class CollaborativeFilter:
         """
 
         if (self.cache == True):
-            if user in self.calculated:
-                if item in self.calculated[user]:
-                    return self._ratingFromCalculated(*self.calculated[user][item])
-                else: #if item not in self.calculated[user]
-                    self.calculated[user][item] = self._calculateWeights(user, item)
-                    return self._ratingFromCalculated(*self.calculated[user][item])
-            else: #if user note in self.calculated
+            if user not in self.calculated:
                 self.calculated[user] = {}
+            if item not in self.calculated[user]:
                 self.calculated[user][item] = self._calculateWeights(user, item)
-                return self._ratingFromCalculated(*self.calculated[user][item])
-        else: #if calculation is forced
+            return self._ratingFromCalculated(*self.calculated[user][item])
+        else:
             pass #for now
-            #return self._directCalculateRating(user, item)
 
 
     def _ratingFromCalculated(self, weightedRatings, sumSimilarities): #done
@@ -153,7 +147,7 @@ class CollaborativeFilter:
         return sum(self._similarity(user, other) for other in users)
 
 
-    def _similarity(self, user, other): #done (needs refactoring)
+    def _similarity(self, user, other): #done
         """
         Calulates the similarity for a given pair of users
 
@@ -163,17 +157,14 @@ class CollaborativeFilter:
 
         Return -> the similarity between user and other
         """
-        
-        if user in self.similarities:
-            if other in self.similarities[user]:
-                return self._calculateSimilarity(*self.similarities[user][other])
-            else:
-                self.similarities[user][other] = self._setSimilarities(user, other)
-                return self._calculateSimilarity(*self.similarities[user][other])
-        else:
+
+        if user not in self.similarities:
             self.similarities[user] = {}
+        if other not in self.similarities[user]:
             self.similarities[user][other] = self._setSimilarities(user, other)
-            return self._calculateSimilarity(*self.similarities[user][other])
+        return self._calculateSimilarity(*self.similarities[user][other])
+
+
 
 
     def _calculateSimilarity(self, rssUser, rssOther, multSum): #done
@@ -264,10 +255,23 @@ class CollaborativeFilter:
 
     def changeOpinion(self, user, item, opinion): #TODO
         """
+        Changes a users opinion of an item and psuhes the changes out as necessary
 
+        Arguments:
+            user    -> a user whose opinion is changing
+            item    -> the item for the user that changes
+            opinion -> the new ratings the user has for the item
+
+        Return -> None
         """
-        pass
 
     
 if __name__=="__main__":
-    pass
+    assert 1 == 1
+    #do more
+    x = CollaborativeFilter("database.db", "databases/data", "main")
+    users = ["one", "two", "three", "four"]
+    classes = ["CS1331", "CS1332", "CS1333", "CS1334"]
+    for user in users:
+        for clazz in classes:
+            sys.stdout.write(user+" "+clazz+" - "+str(x.predictOpinion(user, clazz))+"\n")
