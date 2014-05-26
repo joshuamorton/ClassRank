@@ -4,8 +4,8 @@ The collaborative filtering portion of the system.
 
 
 import databases.database as databases
-import math
-import sys
+from math import sqrt
+from sys import stdout
 
 class CollaborativeFilter:
     """
@@ -193,7 +193,7 @@ class CollaborativeFilter:
         Return -> tuple(rss(user), rss(other), multsum(user, other))
         """
 
-        items = items = [column[0] for column in self.db.items()]
+        items = [column[0] for column in self.db.items()]
         sharedItems = {item for item in items if self._opinion(user, item) is not 0} & {item for item in items if self._opinion(other, item) is not 0}
         userRss = self._rss(user, sharedItems)
         otherRss = self._rss(other, sharedItems)
@@ -212,7 +212,7 @@ class CollaborativeFilter:
         Return -> rss(user) over the shared items with other
         """
 
-        return math.sqrt(sum(self._opinion(user, item) ** 2 for item in shared))
+        return sqrt(sum(self._opinion(user, item) ** 2 for item in shared))
 
 
     def _multSum(self, user, other, shared): #done
@@ -241,16 +241,11 @@ class CollaborativeFilter:
         Return -> the opinion a user has for an item based directly on the database, either a number or 0 representing a null value
         """
 
-        if user in self.opinions:
-            if item in self.opinions[user]:
-                return self.opinions[user][item]
-            else:
-                self.opinions[user][item] = self.db.currentOpinion(user, item) or 0
-                return self.opinions[user][item]
-        else:
+        if user not in self.opinions:
             self.opinions[user] = {}
+        if item not in self.opinions[user]:
             self.opinions[user][item] = self.db.currentOpinion(user, item) or 0
-            return self.opinions[user][item]
+        return self.opinions[user][item]
 
 
     def changeOpinion(self, user, item, opinion): #TODO
@@ -265,6 +260,75 @@ class CollaborativeFilter:
         Return -> None
         """
 
+        #used to keep track of any changes in the items compared, if an item is removed or added
+        usersItems = {item for item in items if self._opinion(user, item) is not 0}
+
+        #checks to see if the item is removed or not
+        change = self._checkNewOrRemoved(user, item, usersItems, opinion)
+
+        #first, changes the opinion in the database and holds on to the old opinion for use later
+        oldOpinion = db.currentOpinion(user, item)
+        db.changeOpinion(user, item, opinion)
+
+        #then this needs to be updated in the opinions matrix
+        if user not in self.opinions:
+            self.opinions[user] = {}
+        self.opinions[user][item] = opinion
+
+        #then this change needs to propgate out to all of the similarities
+        users = {person[0] for person in self.db.users()} - {user}
+        for other in users:
+            self._updateSimilarities(user, item, other, opinion, change, oldOpinion)
+
+
+    #I don't think you actually need this anywhere, but I'm keeping it for now just in case.
+    # converting to 0s magically makes everything work
+    def _checkNewOrRemoved(self, user, item, items, opinion, oldOpinion):
+        """
+        Checks to see if the item being removed or added
+
+        Arguments:
+            user       -> the user whose opinion is being changed
+            item       -> the item for which the opinion is changing
+            items      -> the list of all items known by that user
+            opinion    -> the new opinion
+
+            Return -> -1, 0, or 1.  -1 if the item should be removed from the list, 0 if there are no changes, 
+                      and 1 if the item should be added to the list
+        """
+
+        if item not in items:
+            return 1
+        elif item in items and (opinion == 0 or opinion == None):
+            return -1
+        else:
+            return 0
+
+
+    def _updateSimilarities(self, user, item, other, opinion, change,oldOpinion):
+        """
+        updates the similarity values in the relevant tables
+
+        Arguments:
+            user       -> the user whose opinion is being changed
+            item       -> the item about which the users opinion changes
+            other      -> the other use whose similarity is being compared to
+            opinion    -> the new opinion a user has for the item
+            change     -> a value -1, 0, or 1, representing whether or not an item needs to be added or removed
+                          from the list of items
+            oldOpinion -> the old opinion the user had for the item
+
+        Return -> None
+        """
+
+        if user in self.similarities:
+            if other in self.similarities[user]:
+                rssUser = sqrt(self.similarities[user][other][0] - oldOpinion ** 2 + opinion ** 2)
+                newA = self.similarities[user][other][2] + self.db.currentOpinion(other, item) * (opinion - oldOpinion)
+                if change == 1:
+                    pass
+        
+
     
 if __name__=="__main__":
     assert 1 == 1
@@ -274,4 +338,4 @@ if __name__=="__main__":
     classes = ["CS1331", "CS1332", "CS1333", "CS1334"]
     for user in users:
         for clazz in classes:
-            sys.stdout.write(user+" "+clazz+" - "+str(x.predictOpinion(user, clazz))+"\n")
+            stdout.write(user+" "+clazz+" - "+str(x.predictOpinion(user, clazz))+"\n")
