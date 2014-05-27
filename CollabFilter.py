@@ -7,9 +7,10 @@ import databases.database as databases
 from math import sqrt
 from sys import stdout
 
-class CollaborativeFilter:
+class CollaborativeFilter(object):
     """
-    A Collaborative Filtering algorithm/object meant to be heavily optimized for speed
+    A Collaborative Filtering algorithm/object meant to be heavily optimized 
+    for speed
     """
 
     def __init__(self, name, path, table, debug=False, cache=True):
@@ -20,9 +21,11 @@ class CollaborativeFilter:
             name  -> the name of the database file
             path  -> the path to the database file
             table -> the name of the table in the database file
-            debug -> activates debug mode, providing additional outputs and information about what is happening
-            cache -> used for testing, to compare between the caches being used and a normal, cache free version
-                     both for benchmarking and for error checking
+            debug -> activates debug mode, providing additional outputs and
+                     information about what is happening
+            cache -> used for testing, to compare between the caches being used
+                     and a normal, cache free version both for benchmarking and
+                     for error checking
         """
 
         self.name = name
@@ -72,7 +75,7 @@ class CollaborativeFilter:
         Return -> the opinion that a user should have for an item based on collaborative filtering
         """
 
-        if (self.cache == True):
+        if self.cache == True:
             if user not in self.calculated:
                 self.calculated[user] = {}
             if item not in self.calculated[user]:
@@ -260,15 +263,16 @@ class CollaborativeFilter:
         """
 
         #used to keep track of any changes in the items compared, if an item is removed or added
+        items = [column[0] for column in self.db.items()]
         usersItems = {item for item in items if self._opinion(user, item) is not 0}
 
-        #checks to see if the item is removed or not
-        change = self._checkNewOrRemoved(user, item, usersItems, opinion)
 
         #first, changes the opinion in the database and holds on to the old opinion for use later
-        oldOpinion = db.currentOpinion(user, item)
-        db.changeOpinion(user, item, opinion)
+        oldOpinion = self.db.currentOpinion(user, item)
+        self.db.changeOpinion(user, item, opinion)
 
+        #checks to see if the item is removed or not
+        change = self._checkNewOrRemoved(user, item, usersItems, opinion, oldOpinion)
         #then this needs to be updated in the opinions matrix
         if user not in self.opinions:
             self.opinions[user] = {}
@@ -334,7 +338,7 @@ class CollaborativeFilter:
                     rssOther = sqrt(self.similarities[user][other][1] - self._opinion(other, item) ** 2)
                 else:
                     rssOther = sqrt(self.similarities[user][other][1])
-                oldSimil = _calculateSimilarity(*self.similarities[user][other])
+                oldSimil = self._calculateSimilarity(*self.similarities[user][other])
                 self.similarities[user][other] = (rssUser, rssOther, newA)
                 items = [column[0] for column in self.db.items()]
                 for otherItem in items:
@@ -358,7 +362,7 @@ class CollaborativeFilter:
                 else:
                     rssOther = sqrt(self.similarities[other][user][1])
                     #keep in mind that user and other switch in this case,everything else is the same
-                oldSimil = _calculateSimilarity(*self.similarities[other][user])
+                oldSimil = self._calculateSimilarity(*self.similarities[other][user])
                 self.similarities[other][user] = (rssOther, rssUser, newA)
                 items = [column[0] for column in self.db.items()]
                 for otherItem in items:
@@ -368,6 +372,40 @@ class CollaborativeFilter:
             else:
                 pass
                 #although once more, this could recalulate everything and set it.
+
+
+    def _noCacheRating(self, user, item):
+        """
+        Calculates the rating value without using any cached values
+
+        Arguments:
+            user:
+            item:
+
+        Return -> tuple(top, bottom)
+        """
+
+        users = {person[0] for person in self.db.users()} - {user}
+        topPart = sum(self._noCacheSimilarity(user, other) * self._opinion(other, item) for other in users)
+        bottomPart = sum(self._noCacheSimilarity(user, other) for other in users)
+        return (topPart, bottomPart)
+
+    def _noCacheSimilarity(self, user, other):
+        """
+        """
+        
+        items = [column[0] for column in self.db.items()]
+        sharedItems = {item for item in items if self._opinion(user, item) is not 0} & {item for item in items if self._opinion(other, item) is not 0}
+        multsum = sum(self._noCacheOpinion(user, item) * self._noCacheOpinion(other, item) for item in sharedItems)
+        rssUser = sqrt(sum(self._noCacheOpinion(user, item) ** 2 for item in sharedItems))
+        rssOther = sqrt(sum(self._noCacheOpinion(other, item) ** 2 for item in sharedItems))
+        return multsum / (rssOther * rssUser)
+
+
+    def _noCacheOpinion(self, user, item):
+        """
+        """
+        return self.db.currentOpinion(user, item) or 0
 
 
     def _updateCalculatedRating(self, user, item, other, otherItem, opinion, oldOpinion, oldSimil):#done, needs docs
@@ -396,7 +434,7 @@ class CollaborativeFilter:
 
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     assert 1 == 1
     #do more
     x = CollaborativeFilter("database.db", "databases/data", "main")
@@ -404,4 +442,5 @@ if __name__=="__main__":
     classes = ["CS1331", "CS1332", "CS1333", "CS1334"]
     for user in users:
         for clazz in classes:
+            assert x._noCacheRating(user, clazz)[0] / x._noCacheRating(user, clazz)[1] == x.predictOpinion(user, clazz)
             stdout.write(user+" "+clazz+" - "+str(x.predictOpinion(user, clazz))+"\n")
