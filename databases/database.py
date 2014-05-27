@@ -71,8 +71,6 @@ class Database(object):
         cursor         -> the sqlite3 cursor object
         columnInfo     -> ({position}, {name}, {type}, {can be null}, {default}, {is primary key}) for each field in the
                             table
-
-
     """
 
     
@@ -94,6 +92,7 @@ class Database(object):
         self.name = name
         self.table = table
         self.path = os.path.join(self.databaseFolder,self.name)
+        self.columnInfo = []
 
         #check to see if database exists, if yes, connect to it, if no, create and then connect to it
         if (os.path.isfile(self.path)):
@@ -315,6 +314,13 @@ class _Viewer(object):
             tuple([value,user]))
         self.db.commit()
     
+
+    def _fields(self):
+        """
+        Returns a comma seperated string of the fields in the table, useful for "INSERT INTO {table} ({fields})"
+        """
+        return ",".join(list(zip(*self.columnInfo)[1])[1:])
+
 
     def users(self):
         """
