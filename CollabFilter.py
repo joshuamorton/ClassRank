@@ -165,8 +165,6 @@ class CollaborativeFilter:
         return self._calculateSimilarity(*self.similarities[user][other])
 
 
-
-
     def _calculateSimilarity(self, rssUser, rssOther, multSum): #done
         """
         calculates the similarity between users based on the rss and multSum values
@@ -248,7 +246,7 @@ class CollaborativeFilter:
         return self.opinions[user][item]
 
 
-    def changeOpinion(self, user, item, opinion): #TODO
+    def changeOpinion(self, user, item, opinion): #in progress
         """
         Changes a users opinion of an item and psuhes the changes out as necessary
 
@@ -281,9 +279,7 @@ class CollaborativeFilter:
             self._updateSimilarities(user, item, other, opinion, change, oldOpinion)
 
 
-    #I don't think you actually need this anywhere, but I'm keeping it for now just in case.
-    # converting to 0s magically makes everything work
-    def _checkNewOrRemoved(self, user, item, items, opinion, oldOpinion):
+    def _checkNewOrRemoved(self, user, item, items, opinion, oldOpinion):#done
         """
         Checks to see if the item being removed or added
 
@@ -305,7 +301,7 @@ class CollaborativeFilter:
             return 0
 
 
-    def _updateSimilarities(self, user, item, other, opinion, change,oldOpinion):
+    def _updateSimilarities(self, user, item, other, opinion, change,oldOpinion):#in progress
         """
         updates the similarity values in the relevant tables
 
@@ -321,13 +317,49 @@ class CollaborativeFilter:
         Return -> None
         """
 
+        #this whole secion could probably be cleaned up, I'm almost certain it could be in fact
+        #maybe refactor it into its own sub-function that gets called twice
+
         if user in self.similarities:
+            #updates the similarities matrix for user
             if other in self.similarities[user]:
                 rssUser = sqrt(self.similarities[user][other][0] - oldOpinion ** 2 + opinion ** 2)
-                newA = self.similarities[user][other][2] + self.db.currentOpinion(other, item) * (opinion - oldOpinion)
+                newA = self.similarities[user][other][2] + self._opinion(other, item) * (opinion - oldOpinion)
                 if change == 1:
-                    pass
-        
+                    #adds item to the overall list of items
+                    rssOther = sqrt(self.similarities[user][other][1] + self._opinion(other, item) ** 2)
+                elif change == -1:
+                    #removes item from the overall list of items
+                    rssOther = sqrt(self.similarities[user][other][1] - self._opinion(other, item) ** 2)
+                else:
+                    rssOther = sqrt(self.similarities[user][other][1])
+                self.similarities[user][other] = (rssUser, rssOther, newA)
+            else:
+                pass
+                #although this could reasonably be set up to instead calculate the ratings instead
+
+        #this should be tested
+        if other in self.similarities:
+            #updates the similarities matrix for other, in case similarities[other][user] exists
+            if user in self.similarities[other]:
+                rssUser = sqrt(self.similarities[other][user][0] - oldOpinion ** 2 + opinion ** 2)
+                newA = self.similarities[other][user][2] + self._opinion(other, item) * (opinion - oldOpinion)
+                if change == 1:
+                    #adds item to the overall list of items
+                    rssOther = sqrt(self.similarities[other][user][1] + self._opinion(other, item) ** 2)
+                elif change == -1:
+                    #removes item from the overall list of items
+                    rssOther = sqrt(self.similarities[other][user][1] - self._opinion(other, item) ** 2)
+                else:
+                    rssOther = sqrt(self.similarities[other][user][1])
+                    #keep in mind that user and other switch in this case,everything else is the same
+                self.similarities[other][user] = (rssOther, rssUser, newA)
+            else:
+                pass
+                #although once more, this could recalulate everything and set it.
+
+        #####CALCULATE NEW SIMILARITIES
+
 
     
 if __name__=="__main__":
