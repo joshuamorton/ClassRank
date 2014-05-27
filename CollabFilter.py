@@ -80,6 +80,7 @@ class CollaborativeFilter:
             return self._ratingFromCalculated(*self.calculated[user][item])
         else:
             pass #for now
+            #return self._ratingFromCalculated(*self._forceNoCacheRating(user, item))
 
 
     def _ratingFromCalculated(self, weightedRatings, sumSimilarities): #done
@@ -301,7 +302,7 @@ class CollaborativeFilter:
             return 0
 
 
-    def _updateSimilarities(self, user, item, other, opinion, change,oldOpinion):#in progress
+    def _updateSimilarities(self, user, item, other, opinion, change, oldOpinion):#in progress
         """
         updates the similarity values in the relevant tables
 
@@ -333,7 +334,11 @@ class CollaborativeFilter:
                     rssOther = sqrt(self.similarities[user][other][1] - self._opinion(other, item) ** 2)
                 else:
                     rssOther = sqrt(self.similarities[user][other][1])
+                oldSimil = _calculateSimilarity(*self.similarities[user][other])
                 self.similarities[user][other] = (rssUser, rssOther, newA)
+                items = [column[0] for column in self.db.items()]
+                for otherItem in items:
+                    self._updateCalculatedRating(user, item, other, otherItem, opinion, oldOpinion, oldSimil)
             else:
                 pass
                 #although this could reasonably be set up to instead calculate the ratings instead
@@ -353,15 +358,44 @@ class CollaborativeFilter:
                 else:
                     rssOther = sqrt(self.similarities[other][user][1])
                     #keep in mind that user and other switch in this case,everything else is the same
+                oldSimil = _calculateSimilarity(*self.similarities[other][user])
                 self.similarities[other][user] = (rssOther, rssUser, newA)
+                items = [column[0] for column in self.db.items()]
+                for otherItem in items:
+                    self._updateCalculatedRating(user, item, other, otherItem, opinion, oldOpinion, oldSimil)
+                #then update for the user 
+                #self.caculated[user][item] = self._forceNoCacheRating(user, item)
             else:
                 pass
                 #although once more, this could recalulate everything and set it.
 
-        #####CALCULATE NEW SIMILARITIES
+
+    def _updateCalculatedRating(self, user, item, other, otherItem, opinion, oldOpinion, oldSimil):#done, needs docs
+        """
+        Updates the calculated ratings matrix for the ratings of all items by a user
+
+        Arguments:
+            user       ->
+            item       ->
+            other      ->
+            otherItem  ->
+            opinion    ->
+            oldOpinion ->
+            oldSimil   ->
+
+        Return -> None
+        """
+
+        if other not in self.calculated:
+            return
+        if item not in self.calculated[other]:
+            return
+        newTop = self.calculated[other][item][0] + self.similarities[other][other] * opinion - oldOpinion * oldSimil
+        newBot = self.calculated[other][item][1] - oldSimil + self.similarities[other][other]
+        self.calculated[other][item] = (newTop, newBot)
 
 
-    
+
 if __name__=="__main__":
     assert 1 == 1
     #do more
