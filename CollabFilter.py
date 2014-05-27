@@ -379,8 +379,8 @@ class CollaborativeFilter(object):
         Calculates the rating value without using any cached values
 
         Arguments:
-            user:
-            item:
+            user ->
+            item ->
 
         Return -> tuple(top, bottom)
         """
@@ -392,8 +392,15 @@ class CollaborativeFilter(object):
 
     def _noCacheSimilarity(self, user, other):
         """
+        Calculates the similarity without caching anything directly from the database
+
+        Arguments:
+            user  ->
+            other ->
+
+        Return -> the similarity value multsum / (rss(u) * rss(u'))
         """
-        
+
         items = [column[0] for column in self.db.items()]
         sharedItems = {item for item in items if self._opinion(user, item) is not 0} & {item for item in items if self._opinion(other, item) is not 0}
         multsum = sum(self._noCacheOpinion(user, item) * self._noCacheOpinion(other, item) for item in sharedItems)
@@ -404,6 +411,13 @@ class CollaborativeFilter(object):
 
     def _noCacheOpinion(self, user, item):
         """
+        Gets the opinion from the database, this is quick and easy
+
+        Arguments:
+            user ->
+            item ->
+
+        Return ->
         """
         return self.db.currentOpinion(user, item) or 0
 
