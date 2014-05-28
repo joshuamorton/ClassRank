@@ -5,6 +5,8 @@ extended test cases for the collaorative filter
 import CollabFilter as collab
 from timeit import timeit
 from string import ascii_uppercase
+import types
+import pprint
 
 letters = ascii_uppercase
 names = [a+b for a in letters for b in letters]
@@ -55,8 +57,33 @@ def overall_test(first, second, third, runs=1):
     print "caching with " + str(runs) + " iterations"
     print timeit("test_cached("+str(first)+", "+str(second)+", "+str(third)+")", number=runs, setup="from __main__ import test_cached")
 
+def overall_test_with_shenanigans(first, second, third, runs=1):
 
+    methods = [method for method in dir(test_filter) if type(getattr(test_filter, method)) == types.MethodType]
+    counter = {getattr(test_filter, method): 0 for method in methods}
+    #print methods
+
+    for method in methods:
+        def wrapper(function):
+            def newFunction(*args, **kwargs):
+                #print function
+                counter[function] += 1
+                return function(*args, **kwargs)
+            return newFunction
+        setattr(test_filter, method, wrapper(getattr(test_filter, method)))
+
+    test_cached(first, second, third)
+    pprint.pprint(counter)
+
+    for item in counter:
+        counter[item] = 0
+
+
+    test_no_cache(first, second, third)
+    pprint.pprint(counter)
 
 if __name__ == "__main__":
     #fill_database()
-    overall_test(1, 1, 1)
+    #overall_test(1, 1, 1)
+    overall_test_with_shenanigans(1,1,1)
+
