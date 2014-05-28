@@ -328,7 +328,7 @@ class CollaborativeFilter(object):
         if user in self.similarities:
             #updates the similarities matrix for user
             if other in self.similarities[user]:
-                rssUser = sqrt(self.similarities[user][other][0] - oldOpinion ** 2 + opinion ** 2)
+                rssUser = sqrt(self.similarities[user][other][0] ** 2 - oldOpinion ** 2 + opinion ** 2)
                 newA = self.similarities[user][other][2] + self._opinion(other, item) * (opinion - oldOpinion)
                 if change == 1:
                     #adds item to the overall list of items
@@ -351,7 +351,7 @@ class CollaborativeFilter(object):
         if other in self.similarities:
             #updates the similarities matrix for other, in case similarities[other][user] exists
             if user in self.similarities[other]:
-                rssUser = sqrt(self.similarities[other][user][0] - oldOpinion ** 2 + opinion ** 2)
+                rssUser = sqrt(self.similarities[other][user][0] ** 2 - oldOpinion ** 2 + opinion ** 2)
                 newA = self.similarities[other][user][2] + self._opinion(other, item) * (opinion - oldOpinion)
                 if change == 1:
                     #adds item to the overall list of items
