@@ -306,7 +306,7 @@ class CollaborativeFilter(object):
             return 0
 
 
-    def _updateSimilarities(self, user, item, other, opinion, change, oldOpinion):#in progress
+    def _updateSimilarities(self, user, item, other, opinion, change, oldOpinion):#done
         """
         updates the similarity values in the relevant tables
 
@@ -342,7 +342,7 @@ class CollaborativeFilter(object):
                 self.similarities[user][other] = (rssUser, rssOther, newA)
                 items = [column[0] for column in self.db.items()]
                 for otherItem in items:
-                    self._updateCalculatedRating(user, item, other, otherItem, opinion, oldOpinion, oldSimil)
+                    self._updateCalculatedRating(user, item, other, opinion, oldOpinion, oldSimil)
             else:
                 pass
                 #although this could reasonably be set up to instead calculate the ratings instead
@@ -366,7 +366,7 @@ class CollaborativeFilter(object):
                 self.similarities[other][user] = (rssOther, rssUser, newA)
                 items = [column[0] for column in self.db.items()]
                 for otherItem in items:
-                    self._updateCalculatedRating(user, item, other, otherItem, opinion, oldOpinion, oldSimil)
+                    self._updateCalculatedRating(user, item, other, opinion, oldOpinion, oldSimil)
                 #then update for the user 
                 #self.caculated[user][item] = self._forceNoCacheRating(user, item)
             else:
@@ -374,13 +374,13 @@ class CollaborativeFilter(object):
                 #although once more, this could recalulate everything and set it.
 
 
-    def _noCacheRating(self, user, item):
+    def _noCacheRating(self, user, item):#done
         """
         Calculates the rating value without using any cached values
 
         Arguments:
-            user ->
-            item ->
+            user -> the user whose rating is being calculated
+            item -> the item for which the user is calculating a rating
 
         Return -> tuple(top, bottom)
         """
@@ -390,13 +390,14 @@ class CollaborativeFilter(object):
         bottomPart = sum(self._noCacheSimilarity(user, other) for other in users)
         return (topPart, bottomPart)
 
-    def _noCacheSimilarity(self, user, other):
+
+    def _noCacheSimilarity(self, user, other): #done
         """
         Calculates the similarity without caching anything directly from the database
 
         Arguments:
-            user  ->
-            other ->
+            user  -> the user whose rating is being calculated
+            other -> the user to whom they are being compared
 
         Return -> the similarity value multsum / (rss(u) * rss(u'))
         """
@@ -409,31 +410,30 @@ class CollaborativeFilter(object):
         return multsum / (rssOther * rssUser)
 
 
-    def _noCacheOpinion(self, user, item):
+    def _noCacheOpinion(self, user, item):#done
         """
         Gets the opinion from the database, this is quick and easy
 
         Arguments:
-            user ->
-            item ->
+            user -> the user whose rating is being calculated
+            item -> the item whose rating is being fetched
 
         Return ->
         """
         return self.db.currentOpinion(user, item) or 0
 
 
-    def _updateCalculatedRating(self, user, item, other, otherItem, opinion, oldOpinion, oldSimil):#done, needs docs
+    def _updateCalculatedRating(self, user, item, other, opinion, oldOpinion, oldSimil):#done
         """
         Updates the calculated ratings matrix for the ratings of all items by a user
 
         Arguments:
-            user       ->
-            item       ->
-            other      ->
-            otherItem  ->
-            opinion    ->
-            oldOpinion ->
-            oldSimil   ->
+            user       -> the user whose rating is being calculated
+            item       -> the item whose rating is being calculated
+            other      -> the user to whome they are being compared
+            opinion    -> the opinion the user now has for the item
+            oldOpinion -> the user's previous opinion for the item
+            oldSimil   -> the previous similarity between the two users
 
         Return -> None
         """
