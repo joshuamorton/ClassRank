@@ -34,7 +34,6 @@ class CollaborativeFilter(object):
         self.debug = debug
         self.cache = cache
         self.db = databases.Database(self.name, self.table, self.path)
-        self.users = {} #the set of users in the database
 
         #implemented as map(user->map(item->opinion))
         #opinions can be None or 1-5
@@ -48,6 +47,22 @@ class CollaborativeFilter(object):
         #implemented as map(user1->map(item->tuple(sum(simil*opinions[user][item] for user in users), sum(simil for user in users))))
         self.calculated = {}
 
+
+    def items(self):
+        """
+        Returns the items in the matrix
+
+        Return -> the list of items
+        """
+        return self.db.items()
+
+    def users(self):
+        """
+        Returns the users in the database
+
+        Return -> The users as a list
+        """
+        return self.db.users();
 
     def fetchOpinion(self, user, item): #done
         """
@@ -116,7 +131,7 @@ class CollaborativeFilter(object):
         """
         
         #create the users and items sets
-        users = {person[0] for person in self.db.users()} - {user}
+        users = {person[0] for person in self.users()} - {user}
 
         #use those sets to seperately calculate the top and bottom values for the final rating
         return (self._ratingTop(user, item, users), self._ratingBottom(user, item, users)) 
@@ -195,7 +210,7 @@ class CollaborativeFilter(object):
         Return -> tuple(rss(user), rss(other), multsum(user, other))
         """
 
-        items = [column[0] for column in self.db.items()]
+        items = [column[0] for column in self.items()]
         sharedItems = {item for item in items if self._opinion(user, item) is not 0} & {item for item in items if self._opinion(other, item) is not 0}
         userRss = self._rss(user, sharedItems)
         otherRss = self._rss(other, sharedItems)
@@ -246,7 +261,7 @@ class CollaborativeFilter(object):
         if user not in self.opinions:
             self.opinions[user] = {}
         if item not in self.opinions[user]:
-            self.opinions[user][item] = self.db.currentOpinion(user, item) or 0
+            self.opinions[user][item] = self.fetchOpinion(user, item) or 0
         return self.opinions[user][item]
 
 
@@ -263,12 +278,12 @@ class CollaborativeFilter(object):
         """
 
         #used to keep track of any changes in the items compared, if an item is removed or added
-        items = [column[0] for column in self.db.items()]
+        items = [column[0] for column in selfself.items()]
         usersItems = {item for item in items if self._opinion(user, item) is not 0}
 
 
         #first, changes the opinion in the database and holds on to the old opinion for use later
-        oldOpinion = self.db.currentOpinion(user, item)
+        oldOpinion = self.fetchOpinion(user, item)
         self.db.changeOpinion(user, item, opinion)
 
         #checks to see if the item is removed or not
@@ -279,7 +294,7 @@ class CollaborativeFilter(object):
         self.opinions[user][item] = opinion
 
         #then this change needs to propgate out to all of the similarities
-        users = {person[0] for person in self.db.users()} - {user}
+        users = {person[0] for person in self.users()} - {user}
         for other in users:
             self._updateSimilarities(user, item, other, opinion, change, oldOpinion)
 
@@ -340,7 +355,7 @@ class CollaborativeFilter(object):
                     rssOther = sqrt(self.similarities[user][other][1])
                 oldSimil = self._calculateSimilarity(*self.similarities[user][other])
                 self.similarities[user][other] = (rssUser, rssOther, newA)
-                items = [column[0] for column in self.db.items()]
+                items = [column[0] for column in self.items()]
                 for otherItem in items:
                     self._updateCalculatedRating(user, item, other, opinion, oldOpinion, oldSimil)
             else:
@@ -364,7 +379,7 @@ class CollaborativeFilter(object):
                     #keep in mind that user and other switch in this case,everything else is the same
                 oldSimil = self._calculateSimilarity(*self.similarities[other][user])
                 self.similarities[other][user] = (rssOther, rssUser, newA)
-                items = [column[0] for column in self.db.items()]
+                items = [column[0] for column in self.items()]
                 for otherItem in items:
                     self._updateCalculatedRating(user, item, other, opinion, oldOpinion, oldSimil)
                 #then update for the user 
@@ -385,7 +400,7 @@ class CollaborativeFilter(object):
         Return -> tuple(top, bottom)
         """
 
-        users = {person[0] for person in self.db.users()} - {user}
+        users = {person[0] for person in self.users()} - {user}
         topPart = sum(self._noCacheSimilarity(user, other) * self._opinion(other, item) for other in users)
         bottomPart = sum(self._noCacheSimilarity(user, other) for other in users)
         return (topPart, bottomPart)
@@ -402,7 +417,7 @@ class CollaborativeFilter(object):
         Return -> the similarity value multsum / (rss(u) * rss(u'))
         """
 
-        items = [column[0] for column in self.db.items()]
+        items = [column[0] for column in self.items()]
         sharedItems = {item for item in items if self._opinion(user, item) is not 0} & {item for item in items if self._opinion(other, item) is not 0}
         multsum = sum(self._noCacheOpinion(user, item) * self._noCacheOpinion(other, item) for item in sharedItems)
         rssUser = sqrt(sum(self._noCacheOpinion(user, item) ** 2 for item in sharedItems))
@@ -420,7 +435,7 @@ class CollaborativeFilter(object):
 
         Return ->
         """
-        return self.db.currentOpinion(user, item) or 0
+        return self.fetchOpinion(user, item) or 0
 
 
     def _updateCalculatedRating(self, user, item, other, opinion, oldOpinion, oldSimil):#done
