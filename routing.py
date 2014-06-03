@@ -11,6 +11,10 @@ from handlers.RegisterHandler import RegisterHandler
 from handlers.LoginHandler import LoginHandler
 from handlers.LogoutHandler import LogoutHandler
 from handlers.WelcomeHandler import WelcomeHandler
+from handlers.AppHandler import AppHandler
+
+from backend.CollabFilter import CollaborativeFilter
+
 
 
 global_settings = {
@@ -21,6 +25,7 @@ global_settings = {
     "cookie_secret": "Hello world!"
     }
 
+difficulties = CollaborativeFilter("ClassRank.db", "databases/data", "difficulties")
 #a list of web routes and the objects to which they connect
 class_rank = Application([
     (r'/', IndexHandler),
@@ -29,9 +34,11 @@ class_rank = Application([
     (r'/register/?', RegisterHandler),
     (r'/logout/?', LogoutHandler),
     (r'/welcome/?', WelcomeHandler),
+    (r'/app/?', AppHandler, dict(difficulties=difficulties)),
     ], **global_settings)
 
 def runserver():
+    #there will be multiple collaborative filter instances having to do with the different things
     class_rank.listen(8888)
     ioloop.IOLoop.instance().start()
 
