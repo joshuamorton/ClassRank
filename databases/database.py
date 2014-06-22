@@ -74,7 +74,7 @@ class Database(object):
     """
 
     
-    def __init__(self, name="database.db", table="main", folder="data"):
+    def __init__(self, name="database.db", table="main", folder="data", uid="id"):
         """
         Looks for a database of the given name.  If it exists, connects to it.  Otherwise, creates it and then connects
             to it.
@@ -88,7 +88,7 @@ class Database(object):
         #initialize values
         self.databaseFolder = folder
         self.usernameField = "username"
-        self.uniqueID = "id"
+        self.uniqueID = uid
         self.name = name
         self.table = table
         self.path = os.path.join(self.databaseFolder,self.name)

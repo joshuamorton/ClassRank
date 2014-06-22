@@ -14,16 +14,22 @@ class CourseDatabase(object):
     I have created a monster
     """
 
-    def __init__(self, base_class):
+    def __init__(this, base_class):
         class UserTable(base_class):
             __tablename__ = "courses"
             course_id = Column(sqlalchemy.Integer, primary_key=True)
             course_name = Column(String(64), nullable=True)
             identifier = Column(String(16), nullable=False)
 
-        self.class_ = UserTable
-    def create(self):
-        return self.class_
+            def __str__(self):
+                return self.__repr__()
+
+            def __repr__(self):
+                return "<Course {} ({})>".format(self.identifier, self.course_name) 
+
+        this.class_ = UserTable
+    def create(this):
+        return this.class_
 
 
 if __name__ == "__main__":

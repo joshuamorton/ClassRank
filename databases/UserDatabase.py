@@ -6,8 +6,6 @@ import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 from sqlalchemy import Column, String
-import time
-import scrypt #info at https://bitbucket.org/mhallin/py-scrypt/src/55ba75e449556fa4f4c1ee7d255cb4c746f17b77/scrypt.py?at=default
 
 
 class UserDatabase(object):
@@ -15,7 +13,16 @@ class UserDatabase(object):
     I have created a monster
     """
 
-    def __init__(self, base_class, hashlength):
+    def __init__(this, base_class, hashlength):
+        """
+        This instantiates an object with the given settings (namely hashlength)
+            and returns an instance of the new class when create is called
+
+        This also allows additional class specific methods to be added to the
+            class, for example if hashing were to be handled within the user
+            class instead of in the database overall class it could be done that
+            way.
+        """
         class UserTable(base_class):
             __tablename__ = "users"
             user_id = Column(sqlalchemy.Integer, primary_key=True)
@@ -26,10 +33,20 @@ class UserDatabase(object):
             first_name = Column(String(16), nullable=True)
             last_name = Column(String(16), nullable=True)
 
+            def __str__(self):
+                return self.__repr__()
 
-        self.class_ = UserTable
-    def create(self):
-        return self.class_
+            def __repr__(self):
+                return "<User {} ({} {}) at {}>".format(self.user_name, self.first_name or "", self.last_name or "", self.email_address) 
+
+
+        this.class_ = UserTable
+    def create(this):
+        """
+        returns an instance of the new class, should basically always be run
+        unless something strange is happening
+        """
+        return this.class_
 
 
 if __name__ == "__main__":
