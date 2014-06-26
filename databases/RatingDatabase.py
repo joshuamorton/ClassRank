@@ -14,12 +14,13 @@ class RatingDatabase(object):
     I have created a monster
     """
 
-    def __init__(this, base_class):
+    def __init__(this, base_class, course):
         class UserTable(base_class):
             __tablename__ = "ratings"
             user_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("users.user_id") ,primary_key=True)
             course_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("courses.course_id") ,primary_key=True)
             rating = Column(sqlalchemy.Integer, nullable=True)
+            courses = sqlalchemy.orm.relationship(course, backref="ratings")
 
             def __str__(self):
                 return self.__repr__()
@@ -34,4 +35,4 @@ class RatingDatabase(object):
 
 if __name__ == "__main__":
     meta = sqlalchemy.MetaData()
-    testdb = RatingDatabase(sqlalchemy.ext.declarative.declarative_base()).create()
+    testdb = RatingDatabase(sqlalchemy.ext.declarative.declarative_base(), "test").create()

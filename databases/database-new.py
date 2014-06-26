@@ -32,7 +32,7 @@ class Database(object):
 
         # the three main parts of the overall database system
         self.course = CourseDatabase.CourseDatabase(self.base).create()
-        self.rating = RatingDatabase.RatingDatabase(self.base).create()
+        self.rating = RatingDatabase.RatingDatabase(self.base, self.course).create()
         self.user = UserDatabase.UserDatabase(self.base, self.hashlength, self.course, self.rating).create()
 
         self.metadata.create_all(self.engine)
