@@ -3,8 +3,8 @@ Database for storing users
 """
 
 import sqlalchemy
-import sqlalchemy.ext.declarative
 import sqlalchemy.orm
+import sqlalchemy.ext.declarative
 from sqlalchemy import Column, String
 
 
@@ -13,7 +13,7 @@ class UserDatabase(object):
     I have created a monster
     """
 
-    def __init__(this, base_class, hashlength):
+    def __init__(this, base_class, hashlength, course, rating):
         """
         This instantiates an object with the given settings (namely hashlength)
             and returns an instance of the new class when create is called
@@ -22,6 +22,8 @@ class UserDatabase(object):
             class, for example if hashing were to be handled within the user
             class instead of in the database overall class it could be done that
             way.
+
+        groups are the group that a user belongs to, currently only one is possible.
         """
         class UserTable(base_class):
             __tablename__ = "users"
@@ -32,6 +34,10 @@ class UserDatabase(object):
             password_salt = Column(String(16), nullable=False)
             first_name = Column(String(16), nullable=True)
             last_name = Column(String(16), nullable=True)
+            moderator = Column(sqlalchemy.Boolean, default=False, nullable=True)
+            admin = Column(sqlalchemy.Boolean, default=False, nullable=True)
+            ratings = sqlalchemy.orm.relationship(rating, backref="user")
+            courses = sqlalchemy.orm.relationship(course, secondary="ratings", backref="user")
 
             def __str__(self):
                 return self.__repr__()
@@ -51,5 +57,4 @@ class UserDatabase(object):
 
 if __name__ == "__main__":
     meta = sqlalchemy.MetaData()
-    testdb = UserDatabase(sqlalchemy.ext.declarative.declarative_base(), 64).create()
-
+    testdb = UserDatabase(sqlalchemy.ext.declarative.declarative_base(), 64, "test", "test").create()

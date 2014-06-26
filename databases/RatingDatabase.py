@@ -35,4 +35,3 @@ class RatingDatabase(object):
 if __name__ == "__main__":
     meta = sqlalchemy.MetaData()
     testdb = RatingDatabase(sqlalchemy.ext.declarative.declarative_base()).create()
-

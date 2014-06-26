@@ -20,6 +20,7 @@ class CourseDatabase(object):
             course_id = Column(sqlalchemy.Integer, primary_key=True)
             course_name = Column(String(64), nullable=True)
             identifier = Column(String(16), nullable=False)
+            
 
             def __str__(self):
                 return self.__repr__()
@@ -35,4 +36,3 @@ class CourseDatabase(object):
 if __name__ == "__main__":
     meta = sqlalchemy.MetaData()
     testdb = CourseDatabase(sqlalchemy.ext.declarative.declarative_base()).create()
-

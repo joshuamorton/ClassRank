@@ -31,15 +31,14 @@ class Database(object):
         self.metadata = self.base.metadata
 
         # the three main parts of the overall database system
-        self.user = UserDatabase.UserDatabase(self.base, self.hashlength).create()
         self.course = CourseDatabase.CourseDatabase(self.base).create()
         self.rating = RatingDatabase.RatingDatabase(self.base).create()
+        self.user = UserDatabase.UserDatabase(self.base, self.hashlength, self.course, self.rating).create()
 
         self.metadata.create_all(self.engine)
         self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine)
 
     # the rest is just abstraction to make life less terrible
-
     @contextmanager
     def session_scope(self):
         """
@@ -58,7 +57,8 @@ class Database(object):
         finally:
             session.close()
 
-    def add_user(self, username, email, password, first=None, last=None):
+
+    def add_user(self, username, email, password, first=None, last=None, admin=False, mod=False):
         """
         """
         with self.session_scope() as session:
@@ -66,7 +66,8 @@ class Database(object):
                 raise UserExistsError(username)
             now = str(int(time.time()))
             pw_hash = scrypt.hash(password, now, buflen=self.hashlength)
-            session.add(self.user(user_name=username, email_address=email, password_hash=pw_hash, password_salt=now, first_name=first, last_name=last))
+            session.add(self.user(user_name=username, email_address=email, password_hash=pw_hash, password_salt=now, first_name=first, last_name=last, admin=admin, moderator=mod))
+
 
     def user_exists(self, username):
         """
@@ -76,6 +77,7 @@ class Database(object):
                 return True
             return False
 
+
     def add_course(self, name, course_identifier):
         """
         """
@@ -83,6 +85,7 @@ class Database(object):
             if session.query(self.course).filter(self.course.identifier == course_identifier).all():
                 raise CourseExistsError(course_identifier)
             session.add(self.course(course_name=name, identifier=course_identifier))
+
 
     def rate(self, user, course, rating):
         """
@@ -94,7 +97,7 @@ class Database(object):
             try:
                 uid = session.query(self.user).filter(self.user.user_name == user).all()[0].user_id
             except:
-                raise UserExistsError(user)
+                raise UserExistsError
 
             try:
                 courseid = session.query(self.course).filter(self.course.identifier == course).all()[0].course_id
@@ -106,11 +109,13 @@ class Database(object):
             else:
                 session.add(self.rating(user_id=uid, course_id=courseid, rating=rating))
 
+
     def remove_rating(self, user, item):
         """
         This is equivalent to setting the rating to None
         """
         self.rate(user, item, None)
+
 
     def fetch_rating(self, user, course):
         """
@@ -128,7 +133,6 @@ class UserExistsError(Exception):
     Exception raised when a user is already in the database
     """
     def __init__(self, username):
-        super.__init__()
         self.username = username
 
     def __str__(self):
@@ -140,7 +144,6 @@ class CourseExistsError(Exception):
     Exception raised when a user is already in the database
     """
     def __init__(self, identifier):
-        super.__init__()
         self.identifier = identifier
 
     def __str__(self):
@@ -151,6 +154,7 @@ if __name__ == "__main__":
     db = Database()
     print(db.user_exists("me"))
     db.add_user("me", "me@my.domain", "password", first="Joshua", last="Morton")
+    print(db.user_exists("me"))
     db.add_user("you", "you@yourwebsite", "insecure")
     db.add_course("Introduction to Computer Science in Matlab", "CS1371")
     db.add_course("Calculus 2", "MATH1502")
@@ -163,3 +167,5 @@ if __name__ == "__main__":
     db.remove_rating("me", "MATH1502")
     db.rate("me", "MATH1502", 25)
     print(db.fetch_rating("me", "MATH1502"))
+    with db.session_scope() as session:
+        print(session.query(db.user).filter(db.user.user_name == "me").one().ratings)
