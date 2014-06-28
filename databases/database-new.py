@@ -12,6 +12,7 @@ import sqlalchemy.orm
 import UserDatabase
 import CourseDatabase
 import RatingDatabase
+import SchoolDatabase
 import time  # for creating hash salts
 import scrypt  # for hashing passwords
 
@@ -34,9 +35,10 @@ class Database(object):
         self.course = CourseDatabase.CourseDatabase(self.base).create()
         self.rating = RatingDatabase.RatingDatabase(self.base, self.course).create()
         self.user = UserDatabase.UserDatabase(self.base, self.hashlength, self.course, self.rating).create()
+        self.school = SchoolDatabase.SchoolDatabase(self.base, self.course, self.user).create()
 
         self.metadata.create_all(self.engine)
-        self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine)
+        self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine, expire_on_commit=False)
 
     # the rest is just abstraction to make life less terrible
     @contextmanager
@@ -68,6 +70,18 @@ class Database(object):
             pw_hash = scrypt.hash(password, now, buflen=self.hashlength)
             session.add(self.user(user_name=username, email_address=email, password_hash=pw_hash, password_salt=now, first_name=first, last_name=last, admin=admin, moderator=mod))
 
+    def remove_user(self):
+        """
+        """
+        pass
+
+    def add_school(self):
+        pass
+
+    def course_exists(self, course_identifier, school):
+        """
+        """
+        pass
 
     def user_exists(self, username):
         """
@@ -97,12 +111,13 @@ class Database(object):
             try:
                 uid = session.query(self.user).filter(self.user.user_name == user).all()[0].user_id
             except:
-                raise UserExistsError
+                raise UserExistsError #should be UserDNEError
 
             try:
                 courseid = session.query(self.course).filter(self.course.identifier == course).all()[0].course_id
             except:
-                raise CourseExistsError(course)
+                raise CourseExistsError(course) #should be CourseDNEError
+
 
             if session.query(self.rating).filter(self.rating.user_id == uid).filter(self.rating.course_id == courseid).all():
                 session.query(self.rating).filter(self.rating.user_id == uid).filter(self.rating.course_id == courseid).update({"rating": rating})
@@ -125,6 +140,32 @@ class Database(object):
             courseid = session.query(self.course).filter(self.course.identifier == course).one().course_id
             return session.query(self.rating).filter(self.rating.user_id == userid).filter(self.rating.course_id == courseid).one().rating or None
 
+    @property
+    def users(self):
+        """
+        """
+        pass
+    
+    @property
+    def moderators(self):
+        """
+        """
+        with self.session_scope() as session:
+            return session.query(self.user).filter(self.user.moderator == True).all()
+
+    @property
+    def admins(self):
+        """
+        """
+        with self.session_scope() as session:
+            return session.query(self.user).filter(self.user.admin == True).all()
+
+    @property
+    def schools(self):
+        """
+        """
+        pass
+
 
 
 # errors thrown by the above
@@ -133,9 +174,13 @@ class UserExistsError(Exception):
     Exception raised when a user is already in the database
     """
     def __init__(self, username):
+        """
+        """
         self.username = username
 
     def __str__(self):
+        """
+        """
         return "A user named {} already exists".format(self.username)
 
 
@@ -155,7 +200,7 @@ if __name__ == "__main__":
     print(db.user_exists("me"))
     db.add_user("me", "me@my.domain", "password", first="Joshua", last="Morton")
     print(db.user_exists("me"))
-    db.add_user("you", "you@yourwebsite", "insecure")
+    db.add_user("you", "you@yourwebsite", "insecure", admin=True)
     db.add_course("Introduction to Computer Science in Matlab", "CS1371")
     db.add_course("Calculus 2", "MATH1502")
     db.rate("me", "MATH1502", 4)
@@ -168,4 +213,5 @@ if __name__ == "__main__":
     db.rate("me", "MATH1502", 25)
     print(db.fetch_rating("me", "MATH1502"))
     with db.session_scope() as session:
-        print(session.query(db.user).filter(db.user.user_name == "me").one().ratings)
+        print(session.query(db.user).filter(db.user.user_name == "me").one().school)
+    print(db.admins)

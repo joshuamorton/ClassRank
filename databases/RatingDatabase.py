@@ -1,5 +1,5 @@
 """
-Database for storing users
+Database for storing ratings
 """
 
 import sqlalchemy
@@ -11,25 +11,39 @@ import time
 
 class RatingDatabase(object):
     """
-    I have created a monster
+    Factory for creating ratings databases
     """
 
-    def __init__(this, base_class, course):
-        class UserTable(base_class):
+    def __init__(this, base_class, course_):
+        """
+        Creates a class to store user data, based on some provided information
+        """
+        class RatingTable(base_class):
+            """
+            """
             __tablename__ = "ratings"
-            user_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("users.user_id") ,primary_key=True)
-            course_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("courses.course_id") ,primary_key=True)
+            user_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("users.user_id"), primary_key=True)
+            course_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("courses.course_id"), primary_key=True)
             rating = Column(sqlalchemy.Integer, nullable=True)
-            courses = sqlalchemy.orm.relationship(course, backref="ratings")
+            course = sqlalchemy.orm.relationship(course_, backref="ratings")
 
             def __str__(self):
+                """
+                """
                 return self.__repr__()
 
             def __repr__(self):
+                """
+                """
                 return "<Rating of {} by user {} for course {}>".format(self.rating, self.course_id, self.user_id) 
 
-        this.class_ = UserTable
+        this.class_ = RatingTable
+
+
     def create(this):
+        """
+        Returns the UserTable class
+        """
         return this.class_
 
 

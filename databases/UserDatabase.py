@@ -13,7 +13,7 @@ class UserDatabase(object):
     I have created a monster
     """
 
-    def __init__(this, base_class, hashlength, course, rating):
+    def __init__(this, base_class, hashlength, course_, rating_):
         """
         This instantiates an object with the given settings (namely hashlength)
             and returns an instance of the new class when create is called
@@ -25,7 +25,10 @@ class UserDatabase(object):
 
         groups are the group that a user belongs to, currently only one is possible.
         """
+
         class UserTable(base_class):
+            """
+            """
             __tablename__ = "users"
             user_id = Column(sqlalchemy.Integer, primary_key=True)
             user_name = Column(String(32), nullable=False)
@@ -34,19 +37,26 @@ class UserDatabase(object):
             password_salt = Column(String(16), nullable=False)
             first_name = Column(String(16), nullable=True)
             last_name = Column(String(16), nullable=True)
-            moderator = Column(sqlalchemy.Boolean, default=False, nullable=True)
-            admin = Column(sqlalchemy.Boolean, default=False, nullable=True)
-            ratings = sqlalchemy.orm.relationship(rating, backref="user")
-            courses = sqlalchemy.orm.relationship(course, secondary="ratings", backref="user")
+            admin = Column(sqlalchemy.Boolean, default=False, nullable=False)
+            moderator = Column(sqlalchemy.Boolean, default=False, nullable=False)
+            school_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("schools.school_id"))
+            ratings = sqlalchemy.orm.relationship(rating_, backref="user")
+            courses = sqlalchemy.orm.relationship(course_, secondary="ratings", backref="user")
+
 
             def __str__(self):
+                """
+                """
                 return self.__repr__()
 
             def __repr__(self):
-                return "<User {} ({} {}) at {}>".format(self.user_name, self.first_name or "", self.last_name or "", self.email_address) 
-
+                """
+                """
+                return "<User {} ({} {}) at {}>".format(self.user_name, self.first_name or "", self.last_name or "", self.email_address)
 
         this.class_ = UserTable
+
+
     def create(this):
         """
         returns an instance of the new class, should basically always be run

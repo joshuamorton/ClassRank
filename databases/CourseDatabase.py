@@ -1,5 +1,5 @@
 """
-Database for storing users
+Database for storing course information
 """
 
 import sqlalchemy
@@ -15,20 +15,30 @@ class CourseDatabase(object):
     """
 
     def __init__(this, base_class):
-        class UserTable(base_class):
+        """
+        """
+
+        class CourseTable(base_class):
+            """
+            """
             __tablename__ = "courses"
             course_id = Column(sqlalchemy.Integer, primary_key=True)
+            school_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("schools.school_id"))
             course_name = Column(String(64), nullable=True)
             identifier = Column(String(16), nullable=False)
-            
+
 
             def __str__(self):
+                """
+                """
                 return self.__repr__()
 
             def __repr__(self):
+                """
+                """
                 return "<Course {} ({})>".format(self.identifier, self.course_name) 
 
-        this.class_ = UserTable
+        this.class_ = CourseTable
     def create(this):
         return this.class_
 
