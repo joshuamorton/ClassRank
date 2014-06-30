@@ -32,7 +32,7 @@ class SchoolDatabase(object):
             __tablename__ = "schools"
             school_id = Column(sqlalchemy.Integer, primary_key=True)
             school_name = Column(String(64), nullable=False)
-            school_short = Column(String(8), nullable=True)
+            school_short = Column(String(16), nullable=False)
             courses = sqlalchemy.orm.relationship(course_, backref="school")
             students = sqlalchemy.orm.relationship(user_, backref="school")
             

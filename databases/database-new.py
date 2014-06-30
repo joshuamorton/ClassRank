@@ -5,6 +5,7 @@ scrypt hash format
 def hash(password, salt, N=1 << 14, r=8, p=1, buflen=64):
 """
 
+from enum import Enum
 from contextlib import contextmanager
 import sqlalchemy
 import sqlalchemy.ext.declarative
@@ -19,15 +20,36 @@ import scrypt  # for hashing passwords
 
 class Database(object):
     """
-    The main database that all other parts of the app interface with.
+    An abstraction of an sql database for managing user and class information.
+
+    instance data that might be relevant:
+        hashlength -- the length of password hashes
+        course -- the table of courses
+        rating -- the table of ratings (many to many link between course and user)
+        user -- the table of users
+        school -- the table of school (one to many with user and course)
+        sessionmaker -- a factory for sessions, can be used by external tools to make specialized database queries
     """
 
-    def __init__(self, name="ClassRank.db", table="main", folder="data", uid="user_id"):
+    def __init__(self, name="ClassRank.db", table="main", folder="data", uid="user_id", hashlength=64):
         """
+        Initializes the database, creates it as necessary
+
+        Keyword Arguments:
+            name -- the name of the database file, created as necessary
+                default: "ClassRank.db"
+            table -- the table, a holdover from previous versions, can be ignored
+                default: "main"
+            folder -- a relative path to the folder where the database should be stored 
+                default: "data"
+            uid -- the value under which the database stores the user's Primary Key, holdover can be safely ignored
+                default: user_id
+            hashlength -- the length of password hashes
+                default: 64
         """
         self.engine = sqlalchemy.create_engine('sqlite:///'+folder+'/'+name)
 
-        self.hashlength = 64  # length of the scrypt password hash
+        self.hashlength = hashlength  # length of the scrypt password hash
         self.base = sqlalchemy.ext.declarative.declarative_base()
         self.metadata = self.base.metadata
 
@@ -40,13 +62,15 @@ class Database(object):
         self.metadata.create_all(self.engine)
         self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine, expire_on_commit=False)
 
+
     # the rest is just abstraction to make life less terrible
     @contextmanager
     def session_scope(self):
         """
-        Provide a transactional scope around a series of operations.
-        use the syntax
-            with self.session_scope() as session: #or similar
+        database session factory wrapper
+
+        Provide a transactional scope around a series of operations.  use the syntax
+            `with self.session_scope() as session: #or similar`
         for operations requiring a session
         """
         session = self.sessionmaker()
@@ -60,31 +84,78 @@ class Database(object):
             session.close()
 
 
-    def add_user(self, username, email, password, first=None, last=None, admin=False, mod=False):
+    def add_user(self, username, email, password, school, first=None, last=None, admin=False, mod=False):
         """
+        adds a new user to the database
         """
         with self.session_scope() as session:
+            try:
+                schoolid = session.query(self.school).filter(self.school.school_short == school).one().school_id
+            except:
+                raise ItemDoesNotExistError(DatabaseObjects.School, school)
+
             if session.query(self.user).filter(self.user.user_name == username).all():
-                raise UserExistsError(username)
+                raise ItemExistsError(DatabaseObjects.User, username)
             now = str(int(time.time()))
             pw_hash = scrypt.hash(password, now, buflen=self.hashlength)
-            session.add(self.user(user_name=username, email_address=email, password_hash=pw_hash, password_salt=now, first_name=first, last_name=last, admin=admin, moderator=mod))
+            session.add(self.user(user_name=username, email_address=email, password_hash=pw_hash, password_salt=now, school_id=schoolid, first_name=first, last_name=last, admin=admin, moderator=mod))
 
-    def remove_user(self):
+    def remove_user(self, username):
         """
-        """
-        pass
+        entirely removes an existing user from the database
 
-    def add_school(self):
-        pass
+        removes all ratings for the user as well as removing the user's user entry
 
-    def course_exists(self, course_identifier, school):
+        Arguments:
+            username -- the username of the user to be remove
         """
+        with self.session_scope() as session:
+            user_id = session.query(self.user).filter(self.user.user_name == username).user_id
+            session.delete(self.course).where(self.course.user_id == user_id)
+            session.delete(self.user).where(self.user.user_id == user_id)
+
+
+    def school_exists(self, school_name):
         """
-        pass
+        checks to see if a school of the given name is in the database
+
+        Arguments:
+            school_name -- the short name of the school
+        """
+        with self.session_scope() as session:
+            if session.query(self.school).filter(self.school.school_short == school_name).all():
+                return True
+            return False
+
+
+    def add_school(self, school_name, school_short):
+        """
+        adds a new school to the database
+        """
+        with self.session_scope() as session:
+            if session.query(self.school).filter(self.school.school_short == school_short).all():
+                raise ItemExistsError(DatabaseObjects.School, school_short)
+            session.add(self.school(school_name=school_name, school_short=school_short))
+
+
+    def course_exists(self, school_name, course_identifier):
+        """
+        checks to see if a course of a given name is in the database
+        """
+        with self.session_scope() as session:
+            try:
+                school = session.query(self.school).filter(self.school.school_short == school_name).one()
+            except:
+                raise ItemDoesNotExistError(DatabaseObjects.School, school_name)
+
+            if session.query(self.course).filter(self.course.school == school).filter(self.course.identifier == course_identifier).all():
+                return True
+            return False
+
 
     def user_exists(self, username):
         """
+        checks to see if a user of a given username is in the database
         """
         with self.session_scope() as session:
             if session.query(self.user).filter(self.user.user_name == username).all():
@@ -92,31 +163,41 @@ class Database(object):
             return False
 
 
-    def add_course(self, name, course_identifier):
+    def add_course(self, school, name, course_identifier):
         """
+        adds a new course to the database
         """
         with self.session_scope() as session:
-            if session.query(self.course).filter(self.course.identifier == course_identifier).all():
-                raise CourseExistsError(course_identifier)
-            session.add(self.course(course_name=name, identifier=course_identifier))
+            try:
+                schoolid = session.query(self.school).filter(self.school.school_short == school).one().school_id
+            except:
+                raise ItemDoesNotExistError(DatabaseObjects.School, school)
+
+            if session.query(self.course).filter(self.course.identifier == course_identifier).filter(self.course.school_id == schoolid).all():
+                raise ItemExistsError(DatabaseObjects.Course, course_identifier)
+            session.add(self.course(course_name=name, identifier=course_identifier, school_id=schoolid))
 
 
     def rate(self, user, course, rating):
         """
+        provides a general interface to
+
         A general interface for rating, doesn't care whether or not there is
             already a rating for a given course.  If the rating exists, it
             updates the existing rating.  Otherwise it creates it.
         """
         with self.session_scope() as session:
             try:
-                uid = session.query(self.user).filter(self.user.user_name == user).all()[0].user_id
+                user = session.query(self.user).filter(self.user.user_name == user).one()
+                uid = user.user_id
+                schoolid = user.school_id
             except:
-                raise UserExistsError #should be UserDNEError
+                raise ItemDoesNotExistError(DatabaseObjects.User, user)
 
             try:
-                courseid = session.query(self.course).filter(self.course.identifier == course).all()[0].course_id
+                courseid = session.query(self.course).filter(self.course.school_id == schoolid).filter(self.course.identifier == course).all()[0].course_id
             except:
-                raise CourseExistsError(course) #should be CourseDNEError
+                raise ItemDoesNotExistError(DatabaseObjects.Course, course)
 
 
             if session.query(self.rating).filter(self.rating.user_id == uid).filter(self.rating.course_id == courseid).all():
@@ -127,91 +208,146 @@ class Database(object):
 
     def remove_rating(self, user, item):
         """
-        This is equivalent to setting the rating to None
+        removes a rating for a user by setting it to None
+
         """
         self.rate(user, item, None)
 
 
     def fetch_rating(self, user, course):
         """
+        returns the rating for a user 
         """
         with self.session_scope() as session:
-            userid = session.query(self.user).filter(self.user.user_name == user).one().user_id
-            courseid = session.query(self.course).filter(self.course.identifier == course).one().course_id
-            return session.query(self.rating).filter(self.rating.user_id == userid).filter(self.rating.course_id == courseid).one().rating or None
+            try:
+                user = session.query(self.user).filter(self.user.user_name == user).one()
+                uid = user.user_id
+                schoolid = user.school_id
+            except:
+                raise ItemDoesNotExistError(DatabaseObjects.User, user)
+            courseid = session.query(self.course).filter(self.course.school_id == schoolid).filter(self.course.identifier == course).one().course_id
+            return session.query(self.rating).filter(self.rating.user_id == uid).filter(self.rating.course_id == courseid).one().rating or None
+
+    def fetch_school(self, school_name):
+        """
+        """
+        with self.session_scope() as session:
+            return session.query(self.school).filter(self.school.school_short == school_name).one()
+
+    def fetch_course(self, school, course):
+        """
+        """
+        with self.session_scope() as session:
+            try:
+                schoolid = session.query(self.school).filter(self.school.school_short == school).one().school_id
+            except:
+                raise ItemDoesNotExistError(DatabaseObjects.School, school)
+            return session.query(self.course).filter(self.course.school_id == schoolid).filter(self.course.identifier == course).one()
+
+    def fetch_user(self, username):
+        """
+        """
+        with self.session_scope() as session:
+            return session.query(self.user).filter(self.user.user_name == username).one()
 
     @property
     def users(self):
         """
+        property, all users in the database
         """
-        pass
+        with self.session_scope() as session:
+            return session.query(self.user).all()
     
+
     @property
     def moderators(self):
         """
+        property, all moderators in the database
         """
         with self.session_scope() as session:
             return session.query(self.user).filter(self.user.moderator == True).all()
 
+
     @property
     def admins(self):
         """
+        property, all administrators in the database
         """
         with self.session_scope() as session:
             return session.query(self.user).filter(self.user.admin == True).all()
 
+
     @property
     def schools(self):
         """
+        property, all schools in the database
         """
-        pass
+        with self.session_scope() as session:
+            return session.query(self.school).all()
+
+    @property
+    def courses(self):
+        """
+        property, all courses in the db
+        """
+        with self.session_scope() as session:
+            return session.query(self.course).all()
 
 
-
-# errors thrown by the above
-class UserExistsError(Exception):
+#A collection of error classes thrown when either things do or do not exist in the database
+class DatabaseObjects(Enum):
     """
-    Exception raised when a user is already in the database
+    So enums are beautiful and I love them
     """
-    def __init__(self, username):
-        """
-        """
-        self.username = username
-
-    def __str__(self):
-        """
-        """
-        return "A user named {} already exists".format(self.username)
+    School = "School"
+    User = "User"
+    Course = "Course"
+    Rating = "Rating"
 
 
-class CourseExistsError(Exception):
+class ItemExistsError(Exception):
     """
-    Exception raised when a user is already in the database
+    Exception raised when an item is already in the database
     """
-    def __init__(self, identifier):
+    def __init__(self, identifier, name, *args):
         self.identifier = identifier
+        self.name = name
+        self.information = args
 
     def __str__(self):
-        return "The course {} already exists".format(self.identifier)
+        return "A {} named {} already exists".format(self.identifier.name, self.name)
+
+
+class ItemDoesNotExistError(Exception):
+    """
+    Exception raised when an item is not in the database
+    """
+    def __init__(self, identifier, name, *args):
+        self.identifier = identifier
+        self.name = name
+        self.information = args
+
+    def __str__(self):
+        return "A {} named {} does not exist".format(self.identifier.name, self.name)
 
 
 if __name__ == "__main__":
+    #some unit testing, still leaves much to be desired, but ehh
     db = Database()
-    print(db.user_exists("me"))
-    db.add_user("me", "me@my.domain", "password", first="Joshua", last="Morton")
-    print(db.user_exists("me"))
-    db.add_user("you", "you@yourwebsite", "insecure", admin=True)
-    db.add_course("Introduction to Computer Science in Matlab", "CS1371")
-    db.add_course("Calculus 2", "MATH1502")
-    db.rate("me", "MATH1502", 4)
-    db.rate("you", "MATH1502", 2)
-    session = db.sessionmaker()
-    assert session.query(db.rating).filter(db.rating.user_id == session.query(db.user).filter(db.user.user_name == "me").one().user_id).filter(db.rating.course_id == session.query(db.course).filter(db.course.identifier == "MATH1502").one().course_id).one().rating == 4
-    print(session.query(db.user).filter(db.user.user_name == "me").one())
-    session.close()
-    db.remove_rating("me", "MATH1502")
-    db.rate("me", "MATH1502", 25)
-    print(db.fetch_rating("me", "MATH1502"))
-    with db.session_scope() as session:
-        print(session.query(db.user).filter(db.user.user_name == "me").one().school)
-    print(db.admins)
+    if not db.school_exists("Georgia Tech"):
+        db.add_school("Georgia Institute of Technology", "Georgia Tech")
+    assert db.school_exists("Georgia Tech")
+    if not db.user_exists("jmorton"):
+        db.add_user("jmorton", "Joshua.morton13@gmail.com", "password", "Georgia Tech", admin=True)
+    if not db.user_exists("njohnson"):
+        db.add_user("njohnson", "Nick@johnson.com", "securepassword", "Georgia Tech", admin=True, first="Nick", last="Johnson")
+    if not db.course_exists("Georgia Tech", "CS1301"):
+        db.add_course("Georgia Tech", "Introduction to Computer Science in Python", "CS1301")
+    print(db.courses)
+    db.rate("jmorton", "CS1301", 5)
+    if not db.school_exists("Harvard"):
+        db.add_school("Harvard Univerity", "Harvard")
+    if not db.course_exists("Harvard", "CS50"):
+        db.add_course("Harvard", "This is CS50", "CS50")
+    db.rate("jmorton", "CS50", 2)
+    print(db.fetch_rating("jmorton", "CS1301"))
