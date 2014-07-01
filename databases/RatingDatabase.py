@@ -22,9 +22,14 @@ class RatingDatabase(object):
             """
             """
             __tablename__ = "ratings"
+            #creation info
             user_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("users.user_id"), primary_key=True)
             course_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("courses.course_id"), primary_key=True)
-            rating = Column(sqlalchemy.Integer, nullable=True)
+            #attributes
+            rating = Column(sqlalchemy.Integer, nullable=True) #how much one liked the course wholistically
+            grade = Column(sqlalchemy.Integer, nullable=True) #
+            difficulty = Column(sqlalchemy.Integer, nullable=True)
+            #relations
             course = sqlalchemy.orm.relationship(course_, backref="ratings")
 
             def __str__(self):

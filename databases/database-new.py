@@ -87,6 +87,18 @@ class Database(object):
     def add_user(self, username, email, password, school, first=None, last=None, admin=False, mod=False):
         """
         adds a new user to the database
+        
+        adds a new user to the database with the given information, is an unsafe operation, so will throw errors if the 
+
+        Arguments:
+            username -- the username of the user
+            email -- the email address for the user
+            password -- the user's password
+            school -- the school the user attends
+            first -- the first name of the user (optional)
+            last -- the last name of the user (optional)
+            admin -- whether or not the user is an administrator (optional)
+            mod -- whether or not the user is a moderator for their school (optional)
         """
         with self.session_scope() as session:
             try:
@@ -99,6 +111,7 @@ class Database(object):
             now = str(int(time.time()))
             pw_hash = scrypt.hash(password, now, buflen=self.hashlength)
             session.add(self.user(user_name=username, email_address=email, password_hash=pw_hash, password_salt=now, school_id=schoolid, first_name=first, last_name=last, admin=admin, moderator=mod))
+
 
     def remove_user(self, username):
         """
@@ -131,6 +144,12 @@ class Database(object):
     def add_school(self, school_name, school_short):
         """
         adds a new school to the database
+
+        adds a school with the given information, unsafe and will throw errors
+
+        Arguments:
+            school_name --
+            school_short --
         """
         with self.session_scope() as session:
             if session.query(self.school).filter(self.school.school_short == school_short).all():
@@ -141,6 +160,12 @@ class Database(object):
     def course_exists(self, school_name, course_identifier):
         """
         checks to see if a course of a given name is in the database
+
+        checks to see whether or not a course exists, will throw errors
+
+        Arguments:
+            school_name --
+            course_identifier --
         """
         with self.session_scope() as session:
             try:
@@ -156,6 +181,11 @@ class Database(object):
     def user_exists(self, username):
         """
         checks to see if a user of a given username is in the database
+
+        will not throw errors
+
+        Arguments:
+            username -- the name of the user
         """
         with self.session_scope() as session:
             if session.query(self.user).filter(self.user.user_name == username).all():
@@ -166,6 +196,13 @@ class Database(object):
     def add_course(self, school, name, course_identifier):
         """
         adds a new course to the database
+
+        will throw errors
+
+        Arguments:
+            school --
+            name --
+            course_identifier --
         """
         with self.session_scope() as session:
             try:
@@ -178,13 +215,18 @@ class Database(object):
             session.add(self.course(course_name=name, identifier=course_identifier, school_id=schoolid))
 
 
-    def rate(self, user, course, rating):
+    def set_rating(self, user, course, rating):
         """
-        provides a general interface to
+        provides a general interface to rate users
 
-        A general interface for rating, doesn't care whether or not there is
-            already a rating for a given course.  If the rating exists, it
-            updates the existing rating.  Otherwise it creates it.
+        a general interface for rating, doesn't care whether or not there is already a rating for a given course.  
+        if the rating exists, it updates the existing rating.  Otherwise it creates it.
+        will throw errors
+
+        Arguments:
+            user --
+            course --
+            rating --
         """
         with self.session_scope() as session:
             try:
@@ -210,13 +252,44 @@ class Database(object):
         """
         removes a rating for a user by setting it to None
 
+        Arguments:
+            user --
+            item --
         """
-        self.rate(user, item, None)
+        self.set_rating(user, item, None)
+
+
+    def set_grade(self, user, course, rating):
+        """
+        """
+        pass
+
+
+    def set_difficulty(self, user, course, rating):
+        """
+        """
+        pass
+
+
+    def update_course(self, course, **kwargs : "to update"):
+        """
+        """
+        pass
+
+
+    def update_user(self, username, **kwargs):
+        """
+        """
+        pass
 
 
     def fetch_rating(self, user, course):
         """
-        returns the rating for a user 
+        returns the rating for a user and item combination
+
+        Arguments:
+            user --
+            course --
         """
         with self.session_scope() as session:
             try:
@@ -228,14 +301,26 @@ class Database(object):
             courseid = session.query(self.course).filter(self.course.school_id == schoolid).filter(self.course.identifier == course).one().course_id
             return session.query(self.rating).filter(self.rating.user_id == uid).filter(self.rating.course_id == courseid).one().rating or None
 
+
     def fetch_school(self, school_name):
         """
+        returns a school object for a given name
+
+        Arguments:
+            school_name --
         """
         with self.session_scope() as session:
             return session.query(self.school).filter(self.school.school_short == school_name).one()
 
+
     def fetch_course(self, school, course):
         """
+        returns a course at a given school
+
+        unsafe, will throw errors
+        Arguments:
+            school --
+            course --
         """
         with self.session_scope() as session:
             try:
@@ -244,11 +329,39 @@ class Database(object):
                 raise ItemDoesNotExistError(DatabaseObjects.School, school)
             return session.query(self.course).filter(self.course.school_id == schoolid).filter(self.course.identifier == course).one()
 
+
     def fetch_user(self, username):
         """
+        returns a user object for a given username 
+
+        Arguments: 
+            username --
         """
         with self.session_scope() as session:
             return session.query(self.user).filter(self.user.user_name == username).one()
+
+
+    def fetch_students(self, school):
+        """
+        """
+        with self.session_scope() as session:
+            try:
+                schoolid = session.query(self.school).filter(self.school.school_short == school).one().school_id
+            except:
+                raise ItemDoesNotExistError(DatabaseObjects.School, school)
+            return session.query(self.user).filter(self.user.school_id == schoolid).all()
+
+
+    def fetch_courses(self, user):
+        """
+        """
+        with self.session_scope() as session:
+            try:
+                person = session.query(self.user).filter(self.user.user_name == user).one()
+            except:
+                raise ItemDoesNotExistError(DatabaseObjects.User, user)
+            return person.courses
+
 
     @property
     def users(self):
@@ -284,6 +397,7 @@ class Database(object):
         """
         with self.session_scope() as session:
             return session.query(self.school).all()
+
 
     @property
     def courses(self):
@@ -349,5 +463,16 @@ if __name__ == "__main__":
         db.add_school("Harvard Univerity", "Harvard")
     if not db.course_exists("Harvard", "CS50"):
         db.add_course("Harvard", "This is CS50", "CS50")
-    db.rate("jmorton", "CS50", 2)
+    try:
+        db.rate("jmorton", "CS50", 2)
+    except:
+        x = "failed"
+    assert x == "failed"
     print(db.fetch_rating("jmorton", "CS1301"))
+    if not db.course_exists("Georgia Tech", "CS1331"):
+        db.add_course("Georgia Tech", "Introduction to OOP in Java", "CS1331")
+    if not db.course_exists("Georgia Tech", "CS1332"):
+        db.add_course("Georgia Tech", "KickAss Datastructures class!", "CS1332")
+    db.rate("jmorton", "CS1331", 2)
+    db.rate("jmorton", "CS1332", 4)
+    print([db.fetch_rating("jmorton", item.identifier) for item in db.fetch_courses("jmorton")])

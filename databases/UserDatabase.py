@@ -30,15 +30,20 @@ class UserDatabase(object):
             """
             """
             __tablename__ = "users"
+            #signup info
             user_id = Column(sqlalchemy.Integer, primary_key=True)
             user_name = Column(String(32), nullable=False)
             email_address = Column(String(64), nullable=False)
             password_hash = Column(String(hashlength), nullable=False)
             password_salt = Column(String(16), nullable=False)
+            #personal information
             first_name = Column(String(16), nullable=True)
             last_name = Column(String(16), nullable=True)
+            age = Column(sqlalchemy.Integer, nullable=True)
+            #status
             admin = Column(sqlalchemy.Boolean, default=False, nullable=False)
             moderator = Column(sqlalchemy.Boolean, default=False, nullable=False)
+            #relations
             school_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("schools.school_id"))
             ratings = sqlalchemy.orm.relationship(rating_, backref="user")
             courses = sqlalchemy.orm.relationship(course_, secondary="ratings", backref="user")

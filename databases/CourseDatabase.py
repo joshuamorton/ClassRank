@@ -22,10 +22,15 @@ class CourseDatabase(object):
             """
             """
             __tablename__ = "courses"
+            #creation info
             course_id = Column(sqlalchemy.Integer, primary_key=True)
             school_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("schools.school_id"))
             course_name = Column(String(64), nullable=True)
             identifier = Column(String(16), nullable=False)
+            #optional info
+            professor = Column(String(64), nullable=True)
+            year = Column(sqlalchemy.Integer, nullable=True)
+            semester = Column(sqlalchemy.String(), nullable=True)
 
 
             def __str__(self):
@@ -39,6 +44,7 @@ class CourseDatabase(object):
                 return "<Course {} ({})>".format(self.identifier, self.course_name) 
 
         this.class_ = CourseTable
+
     def create(this):
         return this.class_
 
