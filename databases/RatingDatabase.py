@@ -27,8 +27,10 @@ class RatingDatabase(object):
             course_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("courses.course_id"), primary_key=True)
             #attributes
             rating = Column(sqlalchemy.Integer, nullable=True) #how much one liked the course wholistically
-            grade = Column(sqlalchemy.Integer, nullable=True) #
-            difficulty = Column(sqlalchemy.Integer, nullable=True)
+            grade = Column(sqlalchemy.Integer, nullable=True) #how well the student did
+            difficulty = Column(sqlalchemy.Integer, nullable=True) #how difficult they felt the course was
+            year = Column(sqlalchemy.Integer, nullable=True) #year you took it
+            professor = Column(String(64), nullable=True) #prof that taught it
             #relations
             course = sqlalchemy.orm.relationship(course_, backref="ratings")
 
