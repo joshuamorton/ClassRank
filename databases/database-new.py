@@ -1,8 +1,9 @@
 """
 drop in (hopefully) replacement for the database class
+developed by Joshua Morton
 
-scrypt hash format
-def hash(password, salt, N=1 << 14, r=8, p=1, buflen=64):
+Now with more DRY!
+
 """
 
 from enum import Enum
@@ -82,331 +83,204 @@ class Database(object):
 
 
     #methods that do things!
-    def fetch_school_by_name(self, school):
+    def fetch_school_by_name(self, session, school_name): #done
         """
-        returns a school object for a given name
-
-        Searches the database for a school object with the given short name ("Georgia Tech")
-        This search is "unsafe" and will therefore throw errors if the school does not exist
-
-        Arguments:
-            school -- the short name of the school to be found
-
-        Errors:
-            ItemDoesNotExistError -- rasied if there is no school found
-            MultipleResultsFound -- rasied if there are multiple items of the same name (which should be unique) in the database, indicative of major issues
-
-        Return:
-            A school object as defined in the SchoolDatabase class
         """
+        try:
+            return session.query(self.school).filter(self.school.school_short == school_name).one()
+        except sqlalchemy.orm.exc.NoResultFound:
+            raise ItemDoesNotExistError(DatabaseObjects.School, school)
 
-        with self.session_scope() as session:
-            try:
-                return session.query(self.school).filter(self.school.school_short == school_name).one()
-            except sqlalchemy.orm.exc.NoResultFound:
-                raise ItemDoesNotExistError(DatabaseObjects.School, school)
-        
 
-    def fetch_school_by_id(self, schoolid):
+    def fetch_school_by_id(self, session, schoolid): #done
         """
-        returns a school object by a given schoolid
-
-        Searches the database for a school object with the given unique id (12345)
-        This search is "unsafe" and will therefore throw errors if the school does not exist
-
-        Arguments:
-            schoolid -- the unique id of the school in the database
-
-        Errors:
-            ItemDoesNotExistError -- rasied if there is no school found
-            MultipleResultsFound -- rasied if there are multiple items of the same id (which should be unique) in the database, indicative of major issues
-
-        Return:
-            A school object as defined in the SchoolDatabase class
         """
-
-        with self.session_scope() as session:
-            try:
-                return session.query(self.school).get(schoolid)
-            except sqlalchemy.orm.exc.ObjectDeletedError:
-                raise ItemDoesNotExistError(DatabaseObjects.School, schoolid)
+        try:
+            return session.query(self.school).get(schoolid)
+        except sqlalchemy.orm.exc.ObjectDeletedError:
+            raise ItemDoesNotExistError(DatabaseObjects.School, schoolid)
 
 
-    def fetch_user_by_name(self, username):
+    def fetch_user_by_name(self, session, user): #done
         """
-        returns a user object for a given username
-
-        Searches the database for a user object with the given username ("jmorton")
-        This search is "unsafe" and will therefore throw errors if the user does not exist
-
-        Arguments:
-            username -- the short name of the school to be found
-
-        Errors:
-            ItemDoesNotExistError -- rasied if there is no item found
-            MultipleResultsFound -- rasied if there are multiple items of the same name (which should be unique) in the database, indicative of major issues
-
-        Return:
-            A user object as defined in the UserDatabase class
         """
-
-        with self.session_scope() as session:
-            try:
-                return session.query(self.user).filter(self.user.user_name == username).one()
-            except sqlalchemy.orm.exc.NoResultFound:
-                raise ItemDoesNotExistError(DatabaseObjects.User, username)
+        try:
+            return session.query(self.user).filter(self.user.user_name == username).one()
+        except sqlalchemy.orm.exc.NoResultFound:
+            raise ItemDoesNotExistError(DatabaseObjects.User, username)
 
 
-    def fetch_user_by_id(self, userid):
+    def fetch_user_by_id(self, session, userid): #done
         """
-        returns a user object for a given username
-
-        Searches the database for a user object with the given username ("jmorton")
-        This search is "unsafe" and will therefore throw errors if the user does not exist
-
-        Arguments:
-            username -- the short name of the school to be found
-
-        Errors:
-            ItemDoesNotExistError -- rasied if there is no item found
-            MultipleResultsFound -- rasied if there are multiple items of the same name (which should be unique) in the database, indicative of major issues
-
-        Return:
-            A user object as defined in the UserDatabase class
         """
-        
-        with self.session_scope() as session:
-            try:
-                return session.query(self.user).get(userid)
-            except sqlalchemy.orm.exc.ObjectDeletedError:
-                raise ItemDoesNotExistError(DatabaseObjects.User, username)
+        try:
+            return session.query(self.user).get(userid)
+        except sqlalchemy.orm.exc.ObjectDeletedError:
+            raise ItemDoesNotExistError(DatabaseObjects.User, username)
 
 
-    def fetch_course_by_name(self, coursename, school, semester=None, year=None, professor=None):
+    def fetch_course_by_name(self, session, school, coursename, semester=None, year=None, professor=None): #done, might want to clean it
         """
-        returns a user object for a given username
-
-        Searches the database for a course object for a given school and user
-        This search is "unsafe" and will therefore throw errors if the course or school does not exist
-
-        Arguments:
-            coursename -- the short name of the course ("CS1301")
-            school -- the schoolname for the school where the course is held ("Georgia Tech")
-            semester -- (optional) the semester where the course is, a semester enum (Semesters.Summer)
-            year -- (optional) the year of the course (2012)
-            professor -- (optional) the professor who taught the course ("Greco")
-
-        Errors:
-            ItemDoesNotExistError -- rasied if there is no item found
-            MultipleResultsFound -- rasied if there are multiple items of the same name (which should be unique) in the database, indicative of major issues
-
-        Return:
-            A course object as defined in the CourseDatabase class
         """
+        try:
+            schoolid = session.query(self.school).filter(self.school.school_short == school).one().school_id
+        except sqlalchemy.orm.exc.NoResultFound:
+            raise ItemDoesNotExistError(DatabaseObjects.School, school)
 
-        with self.session_scope() as session:
-            try:
-                schoolid = session.query(self.school).filter(self.school.school_short == school_name).one().school_id
-            except sqlalchemy.orm.exc.NoResultFound:
-                raise ItemDoesNotExistError(DatabaseObjects.School, school)
+        query = {}
+        query["course_name"] = coursename
+        query["school_id"] = schoolid
 
-            kwargs = {}
-            kwargs["course_name"] = coursename
-            kwargs["school_id"] = schoolid
-            kwargs["semeser"] = semeser
-            kwargs["year"] = year
-            kwargs["professor"] = professor
+        if semester:
+            query["semester"] = semester
+        if year:
+            query["year"] = year
+        if professor:
+            query["professor"] = professor
 
-            try:
-                return session.query(self.course).filter(**kwargs).one()
-            except:
-                raise ItemDoesNotExistError(DatabaseObjects.Course, coursename)
+        try:
+            return session.query(self.course).filter_by(**query).one()
+        except:
+            raise ItemDoesNotExistError(DatabaseObjects.Course, coursename)
 
 
-
-    def fetch_course_by_id(self, courseid):
+    def fetch_course_by_id(self, session, courseid): #done
         """
-        returns a user object for a given username
-
-        Searches the database for a course object for a given school and user
-        This search is "unsafe" and will therefore throw errors if the course does not exist
-
-        Arguments:
-            courseid -- the unique id for the course (21345)
-
-        Errors:
-            ItemDoesNotExistError -- rasied if there is no item found
-            MultipleResultsFound -- rasied if there are multiple items of the same name (which should be unique) in the database, indicative of major issues
-
-        Return:
-            A course object as defined in the CourseDatabase class
         """
-        with self.session_scope() as session:
-            try:
-                session.query(self.course).get(courseid)
-            except sqlalchemy.orm.exc.ObjectDeletedError:
-                raise ItemDoesNotExistError(DatabaseObjects.Course, courseid)
+        try:
+            return session.query(self.course).get(courseid)
+        except sqlalchemy.orm.exc.ObjectDeletedError:
+            raise ItemDoesNotExistError(DatabaseObjects.Course, courseid)
 
 
-    def fetch_rating_by_names(self, username, coursename, semester=None, year=None, professor=None):
+    def fetch_rating_by_name(self, session, username, coursename, semester=None, year=None, professor=None): #done
         """
-        returns a rating object for a given user/course combination
-
-        Searches the database for a rating by a user for a specific course at their school
-        This search is unsafe and will therefore throw errors if the course, user, school, or rating does not exist
-
-        Arguments:
-            username -- the username of the user who rated the course ("jmorton")
-            coursename -- the short name of the course ("CS1301")
-            semester -- (optional) the semester where the course is, a semester enum (Semesters.Summer)
-            year -- (optional) the year of the course (2012)
-            professor -- (optional) the professor who taught the course ("Greco")
-
-        Errors:
-            ItemDoesNotExistError -- rasied if there is no item found
-            MultipleResultsFound -- rasied if there are multiple items of the same name (which should be unique) in the database, indicative of major issues
-
-        Return:
-            A rating object as defined in the RatingDatabase class
         """
+        try:
+            user = session.query(self.user).filter(self.user.user_name == username).one()
+            userid = user.user_id
+            schoolid = user.school_id
+        except:
+            raise ItemDoesNotExistError(DatabaseObjects.User, username)
 
 
-        with self.session_scope() as session:
-            try:
-                user = session.query(self.user).filter(self.user.user_name == username).one()
-                userid = user.user_id
-                schoolid = school_school.id
-            except sqlalchemy.orm.exc.NoResultFound:
-                raise ItemDoesNotExistError(DatabaseObjects.User, username)
 
-            kwargs = {}
-            kwargs["course_name"] = coursename
-            kwargs["school_id"] = schoolid
-            kwargs["semeser"] = semeser
-            kwargs["year"] = year
-            kwargs["professor"] = professor
+        query = {}
+        query["course_name"] = coursename
+        query["school_id"] = schoolid
 
-            try:
-                courseid = session.query(self.course).filter(**kwargs).one().course_id
-            except:
-                raise ItemDoesNotExistError(DatabaseObjects.Course, coursename)
+        if semester:
+            query["semester"] = semester
+        if year:
+            query["year"] = year
+        if professor:
+            query["professor"] = professor
 
-            try:
-                return session.query(self.rating).filter(self.rating.user_id == userid).filter(self.rating.course_id == courseid).one()
-            except:
-                raise ItemDoesNotExistError(DatabaseObjects.Rating, username+" for "+coursename)
+        try:
+            courseid = session.query(self.course).filter_by(**query).one().course_id
+        except:
+            raise ItemDoesNotExistError(DatabaseObjects.Course, coursename)
+
+        try:
+            return session.query(self.rating).filter_by(user_id == userid, course_id == courseid).one()
+        except:
+            raise ItemDoesNotExistError(DatabaseObjects.Course, coursename)
 
 
-    def fetch_rating_by_id(self, userid, courseid):
-        """
-        returns a rating object for a given userid/courseid combination
+    def fetch_rating_by_id(self, session, userid, courseid): #done
+        try:
+            return session.query(self.rating).filter(self.rating.user_id == userid).filter(self.rating.course_id == courseid).one()
+        except sqlalchemy.orm.exc.NoResultFound:
+            raise ItemDoesNotExistError(DatabaseObjects.Rating, username+" for "+coursename)
 
-        Searches the database for a rating by a user for a specific course at their school
-        This search is unsafe and will therefore throw errors if the course, user, school, or rating does not exist
 
-        Arguments:
-            userid -- the username of the user who rated the course (17)
-            courseid -- the short name of the course (12345)
+    def school_exists(self, session, school_name=None, school_id=None, school_short=None):
+        try:
+            session.query(self.school).filter()
+        except:
+            pass
 
-        Errors:
-            ItemDoesNotExistError -- rasied if there is no item found
-            MultipleResultsFound -- rasied if there are multiple items of the same name (which should be unique) in the database, indicative of major issues
-
-        Return:
-            A rating object as defined in the RatingDatabase class
-        """
-        with self.session_scope() as session:
-            try:
-                return session.query(self.rating).filter(self.rating.user_id == userid).filter(self.rating.course_id == courseid).one()
-            except:
-                raise ItemDoesNotExistError(DatabaseObjects.Rating, username+" for "+coursename)
-
-    def school_exists(self, school):
-        """
-
-        """
+    def user_exists(self, session, user_name=None, user_id=None, email_address=None):
         pass
 
-    def user_exists(self, username):
+    def course_exists(self, session, coursename, semester=None, year=None, professor=None):
+        pass
+
+    def rating_exists(self, session, username, coursename, semester=None, year=None, professor=None):
+        pass
+
+    def add_school(self, session, school_name, school_identifier):
+        #update this
+        session.add(self.school(school_name=school_name, school_short=school_identifier))
+
+
+    def add_user(self, session, username, email, password, school, first=None, last=None, admin=False, mod=False):
+        pass
+
+    def add_course(self, session, school, coursename, identifier, professor=None, year=None, semester=None):
+        #also update, remove schoolid=None
+        schoolid = self.fetch_school_by_name(session, school).school_id
+        session.add(self.course(course_name=coursename, school_id=schoolid, identifier=identifier, professor=professor, year=year, semester=semester))
+
+
+    def add_rating(self, session, username, coursename, semester=None, year=None, professor=None, rating=None, grade=None, difficulty=None):
+        pass
+
+    def remove_rating(self, session, username, coursename):
+        pass
+
+    def remove_user(self, session, username):
+        pass
+
+    #neither schools nor courses can be removed
+
+    def update_user(self, session, username, email=None, password=None, first=None, last=None, age=None, grad=None, admin=None, mod=None):
+        pass
+
+    def update_course(self, session, school, coursename, identifier=None, semester=None, year=None, professor=None):
+        pass
+
+    def update_rating(self, session, username, coursename, semester=None, year=None, professor=None, rating=None, grade=None, difficulty=None):
+        pass
+
+    def fetch_students(self, session, school):
         """
         """
         pass
 
-    def course_exists(self, school, coursename, semester=None, year=None, professor=None):
+
+    def fetch_courses(self, session, user):
         """
         """
         pass
 
-    def add_school():
-        """
-        """
-        pass
 
-    #schools cannot be removed because that implies larger issues and can be done manually by admins
-
-    def add_user():
-        """
-        """
-        pass
-
-    def remove_user():
-        """
-        """
-
-    def add_course():
-        """
-        """
-        pass
-
-    def remove_course():
-        """
-        """
-        pass
-
-    def add_rating():
-        """
-        """
-        pass
-
-    def remove_rating():
-        """
-        """
-        pass
-
-    def update_rating(self, *args, **kwargs):
-        """
-        """
-        self.add_rating(args, kwargs) #probable implementation
-
-    def update_user():
-        """
-        """
-        pass
-
-    def update_course():
-        """
-        """
-        pass
-
-    def fetch_students():
-        """
-        """
-        pass
-
-    def fetch_courses():
-        """
-        """
-        pass
-
-    def check_password(self, username, password):
+    def check_password(self, session, username, password):
         """
         """
         return True
 
-    def update_password(self, username, new_password):
+
+    def update_password(self, session, username, new_password):
         """
         """
         pass
+
+
+
+
+    def __enter__(self):
+        """
+        syntactic sugar
+        """
+        pass
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        """
+        the sugariest of syntaxes
+        """
+        pass
+
 
 
     @property
@@ -454,7 +328,7 @@ class Database(object):
             return session.query(self.course).all()
 
 
-#A collection of error classes thrown when either things do or do not exist in the database
+#A collection of error classes raised when either things do or do not exist in the database
 class DatabaseObjects(Enum):
     """
     So enums are beautiful and I love them
@@ -463,6 +337,7 @@ class DatabaseObjects(Enum):
     User = "User"
     Course = "Course"
     Rating = "Rating"
+
 
 class Semesters(Enum):
     """
@@ -498,35 +373,24 @@ class ItemDoesNotExistError(Exception):
     def __str__(self):
         return "A {} named {} does not exist".format(self.identifier.name, self.name)
 
+class PasswordLengthError(Exception):
+    """
+    Exception raised when a user's password is too long (hashing 2000 char passwords is bad)
+    """
+    def __init__(self, user, password):
+        self.password = password
+        self.user = user
+
+    def str(self):
+        return "User {}'s password ({}) is too long".format(self.user, self.password)
+
 
 if __name__ == "__main__":
     #some unit testing, still leaves much to be desired, but ehh
     db = Database()
-    # if not db.school_exists("Georgia Tech"):
-    #     db.add_school("Georgia Institute of Technology", "Georgia Tech")
-    # assert db.school_exists("Georgia Tech")
-    # if not db.user_exists("jmorton"):
-    #     db.add_user("jmorton", "Joshua.morton13@gmail.com", "password", "Georgia Tech", admin=True)
-    # if not db.user_exists("njohnson"):
-    #     db.add_user("njohnson", "Nick@johnson.com", "securepassword", "Georgia Tech", admin=True, first="Nick", last="Johnson")
-    # if not db.course_exists("Georgia Tech", "CS1301"):
-    #     db.add_course("Georgia Tech", "Introduction to Computer Science in Python", "CS1301")
-    # print(db.courses)
-    # db.rate("jmorton", "CS1301", 5)
-    # if not db.school_exists("Harvard"):
-    #     db.add_school("Harvard Univerity", "Harvard")
-    # if not db.course_exists("Harvard", "CS50"):
-    #     db.add_course("Harvard", "This is CS50", "CS50")
-    # try:
-    #     db.rate("jmorton", "CS50", 2)
-    # except:
-    #     x = "failed"
-    # assert x == "failed"
-    # print(db.fetch_rating("jmorton", "CS1301"))
-    # if not db.course_exists("Georgia Tech", "CS1331"):
-    #     db.add_course("Georgia Tech", "Introduction to OOP in Java", "CS1331")
-    # if not db.course_exists("Georgia Tech", "CS1332"):
-    #     db.add_course("Georgia Tech", "KickAss Datastructures class!", "CS1332")
-    # db.rate("jmorton", "CS1331", 2)
-    # db.rate("jmorton", "CS1332", 4)
-    # print([db.fetch_rating("jmorton", item.identifier) for item in db.fetch_courses("jmorton")])
+    with db.session_scope() as session:
+        db.add_school(session, "derp", "derpina")
+        db.add_course(session, "derpina","CS131", "CSBABY!")
+        session.commit()
+        assert db.fetch_course_by_name(session, "derpina", "CS131")
+
