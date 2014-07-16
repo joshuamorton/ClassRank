@@ -46,7 +46,7 @@ class UserDatabase(object):
             moderator = Column(sqlalchemy.Boolean, default=False, nullable=False)
             #relations
             school_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("schools.school_id"))
-            ratings = sqlalchemy.orm.relationship(rating_, backref="user", cascade="delete")
+            ratings = sqlalchemy.orm.relationship(rating_, backref="user", cascade="delete, delete-orphan")
             courses = sqlalchemy.orm.relationship(course_, secondary="ratings", backref="user")
 
 

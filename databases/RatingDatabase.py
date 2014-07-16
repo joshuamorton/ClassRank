@@ -31,6 +31,7 @@ class RatingDatabase(object):
             difficulty = Column(sqlalchemy.Integer, nullable=True) #how difficult they felt the course was
             year = Column(sqlalchemy.Integer, nullable=True) #year you took it
             professor = Column(String(64), nullable=True) #prof that taught it
+            semester = Column(String(4), nullable=True) #semester, spr, sum, fall, wint
             #relations
             course = sqlalchemy.orm.relationship(course_, backref="ratings")
 
