@@ -127,7 +127,7 @@ class Database(object):
             raise ItemDoesNotExistError(DatabaseObjects.School, school)
 
         query = {}
-        query["course_name"] = coursename
+        query["identifier"] = coursename
         query["school_id"] = schoolid
 
         if semester:
@@ -227,7 +227,7 @@ class Database(object):
             return False
 
 
-    def course_exists(self, session, coursename=None, course_id=None, school=None, semester=None, year=None, professor=None): #done
+    def course_exists(self, session, coursename=None, course_id=None, school=None, schoolid=None, semester=None, year=None, professor=None): #done
         """
         """
         try:
@@ -242,7 +242,9 @@ class Database(object):
             if course_id:
                 query["course_id"] = course_id
             if school:
-                query["school"] = school
+                query["school_id"] = self.fetch_school_by_name(session, school).school_id
+            if schoolid:
+                query["school_id"] = schoolid
             session.query(self.course).filter_by(**query).one()
             return True
         except sqlalchemy.orm.exc.NoResultFound:
@@ -277,15 +279,20 @@ class Database(object):
         if not self.user_exists(session, user_name=username):
             salt = str(int(time.time()))
             pwhash = scrypt.hash(password, salt, self.hashlength)
-            if self.school_exists(session, school_name=school):
+            if self.school_exists(session, school_short=school):
                 schoolid = self.fetch_school_by_name(session, school).school_id
-            session.add(self.user(user_name=username, email_address=email, password_hash=pwhash, password_salt=salt, school_id=schoolid, first=first, last=last, admin=admin, moderator=mod))
+                session.add(self.user(user_name=username, email_address=email, password_hash=pwhash, password_salt=salt, school_id=schoolid, first_name=first, last_name=last, admin=admin, moderator=mod))
+                return True
+            return False
 
 
     def add_course(self, session, school, coursename, identifier, professor=None, year=None, semester=None): #done
-        if self.course_exists(session, coursename):
-            schoolid = self.fetch_school_by_name(session, school).school_id
-            session.add(self.course(course_name=coursename, school_id=schoolid, identifier=identifier, professor=professor, year=year, semester=semester))
+        if not self.course_exists(session, school=school, coursename=identifier, professor=professor, year=year, semester=semester):
+            if self.school_exists(session, school_short=school):
+                schoolid = self.fetch_school_by_name(session, school).school_id
+                session.add(self.course(course_name=coursename, school_id=schoolid, identifier=identifier, professor=professor, year=year, semester=semester))
+                return True
+        return False
 
 
     def add_rating(self, session, username, coursename, semester=None, year=None, professor=None, rating=None, grade=None, difficulty=None): #done
@@ -295,6 +302,8 @@ class Database(object):
             schoolname = self.fetch_school_by_id(session, user.school_id).school_short
             courseid = self.fetch_course_by_name(session, schoolname, coursename, semester, year, professor)
             session.add(self.rating(user_id=userid, course_id=courseid, semester=semester, year=year, professor=professor, rating=rating, grade=grade, difficulty=difficulty))
+            return True
+        return False
 
 
     def remove_rating(self, session, username, coursename, semester=None, year=None, professor=None): #done, this can be made better
@@ -501,3 +510,4 @@ class PasswordLengthError(Exception):
 
     def str(self):
         return "User {}'s password ({}) is too long".format(self.user, self.password)
+
