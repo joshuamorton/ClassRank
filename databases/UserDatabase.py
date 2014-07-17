@@ -32,8 +32,8 @@ class UserDatabase(object):
             __tablename__ = "users"
             #signup info
             user_id = Column(sqlalchemy.Integer, primary_key=True)
-            user_name = Column(String(32), nullable=False)
-            email_address = Column(String(64), nullable=False)
+            user_name = Column(String(32), nullable=False, unique=True)
+            email_address = Column(String(64), nullable=False, unique=True)
             password_hash = Column(String(hashlength), nullable=False)
             password_salt = Column(String(16), nullable=False)
             #personal information

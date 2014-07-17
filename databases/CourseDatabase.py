@@ -6,8 +6,6 @@ import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 from sqlalchemy import Column, String
-import time
-
 
 class CourseDatabase(object):
     """
@@ -32,7 +30,7 @@ class CourseDatabase(object):
             year = Column(sqlalchemy.Integer, nullable=True)
             semester = Column(sqlalchemy.String(), nullable=True)
 
-
+            sqlalchemy.UniqueConstraint("identifier", "school_id", "professor", "year", "semester")
             def __str__(self):
                 """
                 """
