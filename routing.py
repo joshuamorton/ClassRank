@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """
 """
 
@@ -12,9 +13,9 @@ from handlers.LoginHandler import LoginHandler
 from handlers.LogoutHandler import LogoutHandler
 from handlers.WelcomeHandler import WelcomeHandler
 from handlers.AppHandler import AppHandler
-
 from backend.CollabFilter import CollaborativeFilter
 
+#todo: implement command line ioloop for, for example adding the first school and users (to create admins serverside)
 
 
 global_settings = {
