@@ -32,14 +32,14 @@ class Database(object):
         sessionmaker -- a factory for sessions, can be used by external tools to make specialized database queries
     """
 
-    def __init__(self, name="ClassRank.db", table="main", folder="data", uid="user_id", hashlength=64):
+    def __init__(self, name="ClassRank.db", folder="data", hashlength=64):
         """
         initializes the database, creates tables and files as necessary
 
         Keyword Arguments:
             name -- the name of the database file, created as necessary
             table -- the table, a holdover from previous versions, can be ignored
-            folder -- a relative path to the folder where the database should be stored 
+            folder -- a relative path to the folder where the database should be stored
             uid -- the value under which the database stores the user's Primary Key, holdover can be safely ignored
             hashlength -- the length of password hashes
 
@@ -59,7 +59,6 @@ class Database(object):
 
         self.metadata.create_all(self.engine)
         self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine, expire_on_commit=False)
-
 
     # the rest is just abstraction to make life less terrible
     @contextmanager
@@ -89,7 +88,7 @@ class Database(object):
         try:
             return session.query(self.school).filter(self.school.school_short == school_name).one()
         except sqlalchemy.orm.exc.NoResultFound:
-            raise ItemDoesNotExistError(DatabaseObjects.School, school)
+            raise ItemDoesNotExistError(DatabaseObjects.School, school_name)
 
 
     def fetch_school_by_id(self, session, schoolid): #done
@@ -105,9 +104,9 @@ class Database(object):
         """
         """
         try:
-            return session.query(self.user).filter(self.user.user_name == username).one()
+            return session.query(self.user).filter(self.user.user_name == user).one()
         except sqlalchemy.orm.exc.NoResultFound:
-            raise ItemDoesNotExistError(DatabaseObjects.User, username)
+            raise ItemDoesNotExistError(DatabaseObjects.User, user)
 
 
     def fetch_user_by_id(self, session, userid): #done
@@ -116,7 +115,7 @@ class Database(object):
         try:
             return session.query(self.user).get(userid)
         except sqlalchemy.orm.exc.ObjectDeletedError:
-            raise ItemDoesNotExistError(DatabaseObjects.User, username)
+            raise ItemDoesNotExistError(DatabaseObjects.User, userid)
 
 
     def fetch_course_by_name(self, session, school, coursename, semester=None, year=None, professor=None): #done, might want to clean it
@@ -180,19 +179,23 @@ class Database(object):
             raise ItemDoesNotExistError(DatabaseObjects.Course, coursename)
 
         try:
-            return session.query(self.rating).filter(user_id == userid, course_id == courseid).one()
+            return session.query(self.rating).filter(self.rating.user_id == userid, self.rating.course_id == courseid).one()
         except:
             raise ItemDoesNotExistError(DatabaseObjects.Course, coursename)
 
 
     def fetch_rating_by_id(self, session, userid, courseid): #done
+        """
+        """
         try:
             return session.query(self.rating).filter(self.rating.user_id == userid).filter(self.rating.course_id == courseid).one()
         except sqlalchemy.orm.exc.NoResultFound:
-            raise ItemDoesNotExistError(DatabaseObjects.Rating, username+" for "+coursename)
+            raise ItemDoesNotExistError(DatabaseObjects.Rating, userid+" for "+courseid)
 
 
-    def school_exists(self, session, school_name=None, school_id=None, school_short=None): #done
+    def school_exists(self, session, school_name=None, school_id=None, school_short=None):  # done
+        """
+        """
         try:
             query = {}
             if school_name:
@@ -208,6 +211,8 @@ class Database(object):
 
 
     def user_exists(self, session, user_name=None, user_id=None, email_address=None): #done
+        """
+        """
         try:
             query = {}
             if user_name:
@@ -222,7 +227,9 @@ class Database(object):
             return False
 
 
-    def course_exists(self, session, coursename, semester=None, year=None, professor=None): #done
+    def course_exists(self, session, coursename=None, course_id=None, school=None, semester=None, year=None, professor=None): #done
+        """
+        """
         try:
             query = {}
             query["course_name"] = coursename
@@ -232,6 +239,10 @@ class Database(object):
                 query["year"] = year
             if professor:
                 query["professor"] = professor
+            if course_id:
+                query["course_id"] = course_id
+            if school:
+                query["school"] = school
             session.query(self.course).filter_by(**query).one()
             return True
         except sqlalchemy.orm.exc.NoResultFound:
@@ -240,7 +251,7 @@ class Database(object):
 
     def rating_exists(self, session, username, coursename, semester=None, year=None, professor=None): #done
         if self.user_exists(session, user_name=username):
-            userid = fetch_user_by_name(session, username).user_id
+            userid = self.fetch_user_by_name(session, username).user_id
         else:
             return False
         if self.course_exists(session, coursename, semester=semester, year=year, professor=professor):
@@ -265,7 +276,7 @@ class Database(object):
     def add_user(self, session, username, email, password, school, first=None, last=None, admin=False, mod=False): #done
         if not self.user_exists(session, user_name=username):
             salt = str(int(time.time()))
-            pwhash = scrypt.hash(password, salt, hashlength)
+            pwhash = scrypt.hash(password, salt, self.hashlength)
             if self.school_exists(session, school_name=school):
                 schoolid = self.fetch_school_by_name(session, school).school_id
             session.add(self.user(user_name=username, email_address=email, password_hash=pwhash, password_salt=salt, school_id=schoolid, first=first, last=last, admin=admin, moderator=mod))
@@ -278,7 +289,7 @@ class Database(object):
 
 
     def add_rating(self, session, username, coursename, semester=None, year=None, professor=None, rating=None, grade=None, difficulty=None): #done
-        if not self.rating_exists(session, username, courseid, semester, year, professor):
+        if not self.rating_exists(session, username, coursename, semester, year, professor):
             user = self.fetch_user_by_name(session, username)
             userid = user.user_id
             schoolname = self.fetch_school_by_id(session, user.school_id).school_short
@@ -293,16 +304,13 @@ class Database(object):
             schoolid = user.school_id
             schoolname = self.fetch_school_by_id(session, schoolid)
             courseid = self.fetch_course_by_name(session, schoolname, semester, year, professor)
-            session.query(self.rating).filter(user_id==userid,course_id==courseid).delete()
-
+            session.query(self.rating).filter(self.rating.user_id==userid, self.rating.course_id==courseid).delete()
 
     def remove_user(self, session, username): #done
         if self.user_exists(session, username):
-            session.query(self.user).filter(user_name==username).delete()
-
+            session.query(self.user).filter(self.user.user_name==username).delete()
 
     #neither schools nor courses can be removed
-
 
     def update_user(self, session, username, email=None, first=None, last=None, age=None, grad=None, admin=None, mod=None): #done
         if self.user_exists(session, username):
@@ -322,7 +330,7 @@ class Database(object):
             if mod:
                 changes["mod"] = mod
 
-            session.query(self.user).filter(user_name==username).update(**changes)
+            session.query(self.user).filter(self.user.user_name==username).update(**changes)
 
 
     def update_course(self, session, school, coursename, oldsem=None, oldyear=None, oldprof=None, identifier=None, semester=None, year=None, professor=None): #done
@@ -337,8 +345,8 @@ class Database(object):
                 changes["year"] = year
             if professor:
                 changes["professor"] = professor
-            
-            session.query(self.course).filter(course_id==courseid).update(**changes)
+
+            session.query(self.course).filter(self.course.course_id==courseid).update(**changes)
 
 
     def update_rating(self, session, username, coursename, oldsem=None, oldyear=None, oldprof=None, semester=None, year=None, professor=None, rating=None, grade=None, difficulty=None): #done
@@ -360,34 +368,27 @@ class Database(object):
             if difficulty:
                 changes["difficulty"] = difficulty
 
-            session.query(self.rating).filter(course_id==courseid, user_id==userid).update(**changes)
-
+            session.query(self.rating).filter(self.rating.course_id==courseid, self.rating.user_id==userid).update(**changes)
 
     def fetch_students(self, session, school):
         """
         """
         pass
 
-
     def fetch_courses(self, session, user):
         """
         """
         pass
-
 
     def check_password(self, session, username, password):
         """
         """
         return True
 
-
     def update_password(self, session, username, new_password):
         """
         """
         pass
-
-
-
 
     def __enter__(self):
         """
@@ -401,8 +402,6 @@ class Database(object):
         """
         pass
 
-
-
     @property
     def users(self):
         """
@@ -410,7 +409,6 @@ class Database(object):
         """
         with self.session_scope() as session:
             return session.query(self.user).all()
-    
 
     @property
     def moderators(self):
@@ -503,14 +501,3 @@ class PasswordLengthError(Exception):
 
     def str(self):
         return "User {}'s password ({}) is too long".format(self.user, self.password)
-
-
-if __name__ == "__main__":
-    #some unit testing, still leaves much to be desired, but ehh
-    db = Database()
-    with db.session_scope() as session:
-        db.add_school(session, "derp", "derpina")
-        db.add_course(session, "derpina","CS131", "CSBABY!")
-        session.commit()
-        assert db.fetch_course_by_name(session, "derpina", "CS131")
-
