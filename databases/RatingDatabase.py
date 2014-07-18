@@ -6,7 +6,6 @@ import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 from sqlalchemy import Column, String
-import time
 
 
 class RatingDatabase(object):
