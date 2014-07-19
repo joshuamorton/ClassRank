@@ -162,19 +162,9 @@ class Database(object):
         except:
             raise ItemDoesNotExistError(DatabaseObjects.User, username)
 
-        query = {}
-        query["course_name"] = coursename
-        query["school_id"] = schoolid
-
-        if semester:
-            query["semester"] = semester
-        if year:
-            query["year"] = year
-        if professor:
-            query["professor"] = professor
-
         try:
-            courseid = session.query(self.course).filter_by(**query).one().course_id
+            schoolname = self.fetch_school_by_id(session, schoolid).school_short
+            courseid = self.fetch_course_by_name(session, schoolname, coursename, semester=semester, year=year, professor=professor).course_id
         except:
             raise ItemDoesNotExistError(DatabaseObjects.Course, coursename)
 
@@ -190,7 +180,7 @@ class Database(object):
         try:
             return session.query(self.rating).filter(self.rating.user_id == userid).filter(self.rating.course_id == courseid).one()
         except sqlalchemy.orm.exc.NoResultFound:
-            raise ItemDoesNotExistError(DatabaseObjects.Rating, userid+" for "+courseid)
+            raise ItemDoesNotExistError(DatabaseObjects.Rating, str(userid)+" for "+str(courseid))
 
 
     def school_exists(self, session, school_name=None, school_id=None, school_short=None):  # done
@@ -227,12 +217,12 @@ class Database(object):
             return False
 
 
-    def course_exists(self, session, coursename=None, course_id=None, school=None, schoolid=None, semester=None, year=None, professor=None): #done
+    def course_exists(self, session, coursename=None, course_id=None, school=None, school_id=None, semester=None, year=None, professor=None): #done
         """
         """
         try:
             query = {}
-            query["course_name"] = coursename
+            query["identifier"] = coursename
             if semester:
                 query["semester"] = semester
             if year:
@@ -243,8 +233,8 @@ class Database(object):
                 query["course_id"] = course_id
             if school:
                 query["school_id"] = self.fetch_school_by_name(session, school).school_id
-            if schoolid:
-                query["school_id"] = schoolid
+            if school_id:
+                query["school_id"] = school_id
             session.query(self.course).filter_by(**query).one()
             return True
         except sqlalchemy.orm.exc.NoResultFound:
@@ -253,18 +243,20 @@ class Database(object):
 
     def rating_exists(self, session, username, coursename, semester=None, year=None, professor=None): #done
         if self.user_exists(session, user_name=username):
-            userid = self.fetch_user_by_name(session, username).user_id
+            user = self.fetch_user_by_name(session, username)
+            userid = user.user_id
+            schoolid = user.school_id
+            schoolname = self.fetch_school_by_id(session, schoolid).school_short
         else:
             return False
-        if self.course_exists(session, coursename, semester=semester, year=year, professor=professor):
-            courseid = self.fetch_course_by_name(session, username, coursename, semester=semester, year=year, professor=professor).course_id
+        if self.course_exists(session, school_id=schoolid, coursename=coursename, semester=semester, year=year, professor=professor):
+            courseid = self.fetch_course_by_name(session, schoolname, coursename, semester=semester, year=year, professor=professor).course_id
         else:
             return False
-
         try:
             self.fetch_rating_by_id(session, userid, courseid)
             return True
-        except sqlalchemy.orm.exc.NoResultFound:
+        except ItemDoesNotExistError:
             return False
 
 
@@ -296,18 +288,19 @@ class Database(object):
 
 
     def add_rating(self, session, username, coursename, semester=None, year=None, professor=None, rating=None, grade=None, difficulty=None): #done
-        if not self.rating_exists(session, username, coursename, semester, year, professor):
+        if not self.rating_exists(session, username, coursename, semester=semester, year=year, professor=professor):
             user = self.fetch_user_by_name(session, username)
             userid = user.user_id
             schoolname = self.fetch_school_by_id(session, user.school_id).school_short
-            courseid = self.fetch_course_by_name(session, schoolname, coursename, semester, year, professor)
+            courseid = self.fetch_course_by_name(session, schoolname, coursename, semester=semester, year=year, professor=professor).course_id
             session.add(self.rating(user_id=userid, course_id=courseid, semester=semester, year=year, professor=professor, rating=rating, grade=grade, difficulty=difficulty))
+
             return True
         return False
 
 
     def remove_rating(self, session, username, coursename, semester=None, year=None, professor=None): #done, this can be made better
-        if self.rating_exists(session, username, coursename):
+        if self.rating_exists(session, username, coursename, semester=semester, year=year, professor=professor):
             user = self.fetch_user_by_name(session, username)
             userid = user.user_id
             schoolid = user.school_id
@@ -321,30 +314,30 @@ class Database(object):
 
     #neither schools nor courses can be removed
 
-    def update_user(self, session, username, email=None, first=None, last=None, age=None, grad=None, admin=None, mod=None): #done
+    def update_user(self, session, username, email_address=None, first=None, last=None, age=None, graduation=None, admin=None, mod=None): #done
         if self.user_exists(session, username):
             changes = {}
-            if email:
-                changes["email"] = email
+            if email_address:
+                changes["email_address"] = email_address
             if first:
                 changes["first"] = first
             if last:
                 changes["last"] = last
             if age:
                 changes["age"] = age
-            if grad:
-                changes["grad"] = grad
+            if graduation:
+                changes["graduation"] = graduation
             if admin:
                 changes["admin"] = admin
             if mod:
                 changes["mod"] = mod
 
-            session.query(self.user).filter(self.user.user_name==username).update(**changes)
+            session.query(self.user).filter(self.user.user_name==username).update(changes)
 
 
     def update_course(self, session, school, coursename, oldsem=None, oldyear=None, oldprof=None, identifier=None, semester=None, year=None, professor=None): #done
-        if self.course_exists(session, school, coursename, oldsem, oldyear, oldprof):
-            courseid = self.fetch_course_by_name(session, school, coursename, oldsem, oldyear, oldprof).course_id
+        if self.course_exists(session, school=school, coursename=coursename, semester=oldsem, year=oldyear, professor=oldprof):
+            courseid = self.fetch_course_by_name(session, school, coursename, semester=oldsem, year=oldyear, professor=oldprof).course_id
             changes = {}
             if identifier:
                 changes["identifier"] = identifier
@@ -355,12 +348,12 @@ class Database(object):
             if professor:
                 changes["professor"] = professor
 
-            session.query(self.course).filter(self.course.course_id==courseid).update(**changes)
+            session.query(self.course).filter(self.course.course_id==courseid).update(changes)
 
 
     def update_rating(self, session, username, coursename, oldsem=None, oldyear=None, oldprof=None, semester=None, year=None, professor=None, rating=None, grade=None, difficulty=None): #done
-        if self.rating_exists(session, username, coursename, semester, year, professor):
-            rated = self.fetch_rating_by_name(session, username, coursename, oldsem, oldyear, oldprof)
+        if self.rating_exists(session, username, coursename, semester=oldsem, year=oldyear, professor=oldprof):
+            rated = self.fetch_rating_by_name(session, username, coursename, semester=oldsem, year=oldyear, professor=oldprof)
             userid = rated.user_id
             courseid = rated.course_id
             changes = {}
@@ -377,7 +370,8 @@ class Database(object):
             if difficulty:
                 changes["difficulty"] = difficulty
 
-            session.query(self.rating).filter(self.rating.course_id==courseid, self.rating.user_id==userid).update(**changes)
+            session.query(self.rating).filter(self.rating.course_id==courseid, self.rating.user_id==userid).update(changes)
+
 
     def fetch_students(self, session, school):
         """
@@ -389,15 +383,17 @@ class Database(object):
         """
         pass
 
-    def check_password(self, session, username, password):
-        """
-        """
-        return True
-
     def update_password(self, session, username, new_password):
         """
         """
-        pass
+        if self.user_exists(session, user_name=username):
+            user = self.fetch_user_by_name(session, username)
+            newsalt = str(int(time.time()))
+            newhash = scrypt.hash(new_password, newsalt, self.hashlength)
+            user.password_hash = newhash
+            user.password_salt = newsalt
+            return True
+        return False
 
     def __enter__(self):
         """

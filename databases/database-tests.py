@@ -106,13 +106,73 @@ class DatabaseTests(unittest.TestCase):
                 self.db.fetch_course_by_name(session, "Georgia Tech", "CS1301", professor="Summet", year=2013, semester=database.Semesters.Spring.value))
             #and furthermore, there are more than 2 couses, meaning things are different
             self.assertGreater(len(self.db.courses), 2)
-            
+            self.assertTrue(self.db.course_exists(session, school="Georgia Tech", coursename="CS1301", professor="Summet", year=2013, semester=database.Semesters.Fall.value))
+        
+        with self.db.session_scope() as session:
+            #add additional courses to things
+            self.db.add_course(session, "Harvard", "Introduction to Computer Science in C", "CS50", professor="Malan", year=2012, semester=database.Semesters.Fall.value)    
+            self.db.add_course(session, "Georgia Tech", "Health", "APPH1040")
 
     def test_05_add_ratings(self):
-        pass
+        with self.db.session_scope() as session:
+            #returns false if the rating doesn't exist
+            self.assertFalse(self.db.rating_exists(session, "jmorton", "APPH1040"))
+            #also fails gracefully if the course or school doesn't exist, or if they don't match
+            self.assertFalse(self.db.rating_exists(session, "nonexistant user", "CS50", professor="Malan", year=2012, semester=database.Semesters.Fall.value))
+            self.assertFalse(self.db.rating_exists(session, "jmorton", "fake course"))
+            self.assertFalse(self.db.rating_exists(session, "jmorton", "CS50", professor="Malan", year=2012, semester=database.Semesters.Fall.value))
+
+        with self.db.session_scope() as session:
+            #adding a rating fails by throwing an error if school & user do not "match"
+            self.assertRaises(database.ItemDoesNotExistError, self.db.add_rating, session, "jmorton", "CS50", semester=database.Semesters.Fall.value, year=2012, professor="Malan", rating=5, grade=5, difficulty=5)
+            #but you can do it
+            self.assertTrue(self.db.add_rating(session, "jmorton", "CS1301", semester=database.Semesters.Fall.value, year=2013,   professor="Summet", rating=5, grade=5, difficulty=2))
+            self.assertTrue(self.db.add_rating(session, "cmalan", "CS50", semester=database.Semesters.Fall.value, year=2012, professor="Malan", rating=5, grade=5, difficulty=5))
+            self.assertTrue(self.db.add_rating(session, "jmorton", "APPH1040", rating=3, grade=3, difficulty=4))
+
+        with self.db.session_scope():
+            #look, ratings exist!
+            self.assertTrue(self.db.rating_exists(session, "jmorton", "CS1301", semester=database.Semesters.Fall.value, year=2013, professor="Summet"))
 
     def test_06_updates(self):
-        pass
+        with self.db.session_scope() as session:
+            #update a password
+            oldpw = self.db.fetch_user_by_name(session, "jmorton")
+            self.db.update_password(session, "jmorton", "password2")
+            oldmalanpw = self.db.fetch_user_by_name(session, "cmalan")
+            self.db.update_password(session, "cmalan", "CS50isTheBest")
+
+        #change a password
+        with self.db.session_scope() as session:
+            #the new and old hashes aren't the same
+            self.assertNotEqual(self.db.fetch_user_by_name(session, "jmorton").password_hash, oldpw)
+            #also, even if the password is changed to the same thing, the new hash is different because of salting
+            self.assertNotEqual(self.db.fetch_user_by_name(session, "cmalan").password_hash, oldmalanpw)
+
+        #update user information
+        with self.db.session_scope() as session:
+            age = self.db.fetch_user_by_name(session, "jmorton").age
+            #you can change arbitrary user info
+            self.db.update_user(session, "jmorton", age=18, graduation=2017)
+            self.assertNotEqual(age, self.db.fetch_user_by_name(session, "jmorton").age)
+            self.db.update_user(session, "cmalan", email_address="Malan@harvard.edu")
+
+        #update course information
+        with self.db.session_scope() as session:
+            itsid = self.db.fetch_course_by_name(session, "Georgia Tech", "CS1301", semester=database.Semesters.Fall.value, year=2013, professor="Summet").course_id
+            self.db.update_course(session, "Georgia Tech", "CS1301", oldsem=database.Semesters.Fall.value, oldyear=2013, oldprof="Summet", professor="Leahy")
+
+        with self.db.session_scope() as session:
+            #the course is changes
+            self.assertEqual("Leahy", self.db.fetch_course_by_name(session, "Georgia Tech", "CS1301", semester=database.Semesters.Fall.value, year=2013, professor="Leahy").professor)
+            self.assertEqual(itsid, self.db.fetch_course_by_name(session, "Georgia Tech", "CS1301", semester=database.Semesters.Fall.value, year=2013, professor="Leahy").course_id)
+
+        #update ratings
+        with self.db.session_scope() as session:
+            self.db.update_rating(session, "jmorton", "CS1301", oldsem=database.Semesters.Fall.value, oldyear=2013, oldprof="Leahy", rating=1, grade=1, difficulty=1)
+
+        with self.db.session_scope() as session:
+            self.assertEqual(self.db.fetch_rating_by_name(session, "jmorton", "CS1301", semester=database.Semesters.Fall.value, year=2013, professor="Leahy").rating, 1)
 
     def test_07_deletes(self):
         pass
