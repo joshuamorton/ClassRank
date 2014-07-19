@@ -46,7 +46,9 @@ class UserDatabase(object):
             moderator = Column(sqlalchemy.Boolean, default=False, nullable=False)
             #relations
             school_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("schools.school_id"))
-            ratings = sqlalchemy.orm.relationship(rating_, backref="user", cascade="delete, delete-orphan")
+            #ratings = sqlalchemy.orm.relationship(rating_, backref="user", cascade="all, delete, delete-orphan")
+            #there seem to be errors thrown when I include that line, I have absolutely no idea why, and
+            #everything works fine without it.  Strange
             courses = sqlalchemy.orm.relationship(course_, secondary="ratings", backref="user")
 
 

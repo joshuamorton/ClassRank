@@ -304,13 +304,14 @@ class Database(object):
             user = self.fetch_user_by_name(session, username)
             userid = user.user_id
             schoolid = user.school_id
-            schoolname = self.fetch_school_by_id(session, schoolid)
-            courseid = self.fetch_course_by_name(session, schoolname, semester, year, professor)
+            schoolname = self.fetch_school_by_id(session, schoolid).school_short
+            courseid = self.fetch_course_by_name(session, schoolname, coursename=coursename, semester=semester, year=year, professor=professor).course_id
             session.query(self.rating).filter(self.rating.user_id==userid, self.rating.course_id==courseid).delete()
 
     def remove_user(self, session, username): #done
         if self.user_exists(session, username):
-            session.query(self.user).filter(self.user.user_name==username).delete()
+            user = session.query(self.user).filter(self.user.user_name==username).one()
+            session.delete(user)
 
     #neither schools nor courses can be removed
 
@@ -441,6 +442,11 @@ class Database(object):
         with self.session_scope() as session:
             return session.query(self.school).all()
 
+    @property
+    def ratings(self):
+        with self.session_scope() as session:
+            return session.query(self.rating).all()
+    
 
     @property
     def courses(self):

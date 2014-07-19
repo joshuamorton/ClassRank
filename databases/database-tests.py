@@ -175,7 +175,17 @@ class DatabaseTests(unittest.TestCase):
             self.assertEqual(self.db.fetch_rating_by_name(session, "jmorton", "CS1301", semester=database.Semesters.Fall.value, year=2013, professor="Leahy").rating, 1)
 
     def test_07_deletes(self):
-        pass
+        #you can remove a rating
+        with self.db.session_scope() as session: 
+            self.db.remove_rating(session, "jmorton", "CS1301", semester=database.Semesters.Fall.value, year=2013, professor="Leahy")
+            pass
+
+        #you can remove users, and things propgate correctly
+        with self.db.session_scope() as session:
+            self.db.remove_user(session, "jmorton")
+            self.db.remove_user(session, "cmalan")
+
+        self.assertEqual(len(self.db.ratings), 0)
 
     def test_08_misc(self):
         pass
