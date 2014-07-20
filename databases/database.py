@@ -11,10 +11,10 @@ from contextlib import contextmanager
 import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
-import UserDatabase
-import CourseDatabase
-import RatingDatabase
-import SchoolDatabase
+from . import UserDatabase
+from . import CourseDatabase
+from . import RatingDatabase
+from . import SchoolDatabase
 import time  # for creating hash salts
 import scrypt  # for hashing passwords
 

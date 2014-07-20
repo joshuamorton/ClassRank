@@ -2,7 +2,7 @@
 """
 
 from tornado.web import RequestHandler
-from tornado.template import Template, Loader
+from tornado.template import Loader
 import tornado.escape
 
 

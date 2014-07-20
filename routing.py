@@ -13,7 +13,7 @@ from handlers.LoginHandler import LoginHandler
 from handlers.LogoutHandler import LogoutHandler
 from handlers.WelcomeHandler import WelcomeHandler
 from handlers.AppHandler import AppHandler
-from backend.CollabFilter import CollaborativeFilter
+from databases.database import Database
 
 #todo: implement command line ioloop for, for example adding the first school and users (to create admins serverside)
 
@@ -25,17 +25,16 @@ global_settings = {
     "login_url": "/login",
     "cookie_secret": "Hello world!"
     }
-
-difficulties = CollaborativeFilter("ClassRank.db", "databases/data", "difficulties")
+db = Database()
 #a list of web routes and the objects to which they connect
 class_rank = Application([
     (r'/', IndexHandler),
     (r'/index/?', IndexHandler),
     (r'/login/?', LoginHandler),
-    (r'/register/?', RegisterHandler),
+    (r'/register/?', RegisterHandler, dict(db=db)),
     (r'/logout/?', LogoutHandler),
     (r'/welcome/?', WelcomeHandler),
-    (r'/app/?', AppHandler, dict(difficulties=difficulties)),
+    (r'/app/?', AppHandler),
     ], **global_settings)
 
 def runserver():
