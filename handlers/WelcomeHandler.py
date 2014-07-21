@@ -2,7 +2,6 @@
 """
 
 from tornado.web import RequestHandler, authenticated
-from tornado.template import Template, Loader
 
 
 class WelcomeHandler(RequestHandler):

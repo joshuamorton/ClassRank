@@ -13,6 +13,8 @@ from handlers.LoginHandler import LoginHandler
 from handlers.LogoutHandler import LogoutHandler
 from handlers.WelcomeHandler import WelcomeHandler
 from handlers.AppHandler import AppHandler
+from handlers.AdminHandler import AdminHandler
+from handlers.AdminpanelHandler import AdminpanelHandler
 from databases.database import Database
 
 #todo: implement command line ioloop for, for example adding the first school and users (to create admins serverside)
@@ -25,7 +27,10 @@ global_settings = {
     "login_url": "/login",
     "cookie_secret": "Hello world!"
     }
+
+#the gloabl database
 db = Database()
+
 #a list of web routes and the objects to which they connect
 class_rank = Application([
     (r'/', IndexHandler),
@@ -35,6 +40,8 @@ class_rank = Application([
     (r'/logout/?', LogoutHandler),
     (r'/welcome/?', WelcomeHandler),
     (r'/app/?', AppHandler),
+    (r'/admin/?', AdminHandler, dict(db=db)),
+    (r'/adminpanel/?', AdminpanelHandler, dict(db=db)),
     ], **global_settings)
 
 def runserver():
