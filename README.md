@@ -8,6 +8,7 @@ A webapp that uses Collaborative Filtering to help people figure out what (speci
 ##Setup
 
 (inside the environment of your choice)
+
 1. Install Python3 (`sudo apt-get install python3`)
 2. Install the Tornado webserver (`pip3 install tornado`)
 3. Install the scrypt hashing library (`pip3 install scrypt`)
