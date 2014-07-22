@@ -3,12 +3,13 @@
     <head>
         <title>ClassRank</title>
         {% include "head.html" %}
-        <link rel="stylesheet" type="text/css" href="/static/site.css">
+        <link rel="stylesheet" type="text/css" href="/static/splash.css">
     </head>
     <body>
         <div id="container" class="pure-g">
             {% include "sidebar.html" %}
             <div id="main" class="pure-u-md-18-24 pure-u-lg-18-24 pure-u-xl-18-24">
+                <h2>Welcome </h2>
                 <p>Alright, so lets add something to the database.  For now, just add a school, that should be easy enough.
                 <form class="pure-form" action="adminpanel" method="post">
                     <input type="text" name="school_name" placeholder="School Name">
@@ -24,11 +25,12 @@
                     </table>
                 <h2>Users</h2>
                     <table class="pure-table pure-table-bordered">
-                        <thead><th>User id</th><th>Username</th><th>Email address</th></thead>
-                        {%for user in users %}
-                            <tr><td>{{user.user_id}}</td><td>{{user.user_name}}</td><td>{{user.email_address}}</td></tr>
+                        <thead><th>User id</th><th>School id</th><th>Username</th><th>Email address</th></thead>
+                        {%for otheruser in users %}
+                            <tr><td>{{otheruser.user_id}}</td><td>{{otheruser.school_id}}</td><td>{{otheruser.user_name}}</td><td>{{otheruser.email_address}}</td></tr>
                         {% end for %}
                     </table>
+            </div>
             </div>
         </div>
     </body>
