@@ -1,16 +1,14 @@
 """
 """
-from tornado.web import RequestHandler
+from .BaseHandler import BaseHandler
 
 
-class RegisterHandler(RequestHandler):
+class RegisterHandler(BaseHandler):
     """
     """
-    def initialize(self, db):
-        self.db = db
 
     def get(self):
-        self.render("register.html")
+        self.render("register.html", **self.data)
 
     def post(self):
         username = self.get_argument("username", "")
@@ -22,6 +20,6 @@ class RegisterHandler(RequestHandler):
         if username != "" and email != "" and password == password2 and school != "" and len(password) < 256:
             with self.db.session_scope() as session:
                 self.db.add_user(session, username, email, password, school)
-            self.redirect("/login")
+            self.redirect("/login", **self.data)
         else:
-            self.redirect("/register")
+            self.redirect("/register", **self.data)

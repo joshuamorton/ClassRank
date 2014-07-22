@@ -1,18 +1,16 @@
 """
 """
-from tornado.web import RequestHandler
+from .BaseHandler import BaseHandler
 import tornado
-import scrypt
+from . import utils
 
 
-class AdminHandler(RequestHandler):
+class AdminHandler(BaseHandler):
     """
     """
-    def initialize(self, db):
-        self.db = db
 
     def get(self):
-        self.render("adminlogin.html")
+        self.render("adminlogin.html", **self.data)
 
     def post(self):
         username = str(self.get_argument("username", ""))
@@ -20,8 +18,10 @@ class AdminHandler(RequestHandler):
 
         #print("username = "+username+" password = "+password) #dat security
 
-        if username == "jmorton" and scrypt.hash(password, username, 64) == b"\x9fq&_pc\x13E\\\xa2\xf7+BQ\x80\xdf\xb4\x98\xe7\ri'\xb0\xd3)\x7fKq\xd4>\x1f\x91\x04@u\x1b\xd4t\x0089_47k\x00T+\xedWx\x8c\xe9\x1e\x887\x11\xf2T\xb6=\xde\xbc\x0f":
+        if utils.auth_admin(self.db, username, password):
             self.authorize(username)
+        else:
+            self.redirect("/admin")
 
     def authorize(self, user):
         if user:
@@ -34,3 +34,4 @@ class AdminHandler(RequestHandler):
         else:
             print("cleared cookie")
             self.clear_cookie("user")
+            self.redirect("/admin")

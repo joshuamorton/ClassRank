@@ -1,25 +1,43 @@
 """
 """
-from tornado.web import RequestHandler, authenticated
+from tornado.web import authenticated
+from .BaseHandler import BaseHandler
+import tornado
 
 
-class AdminpanelHandler(RequestHandler):
+class AdminpanelHandler(BaseHandler):
     """
     """
-    def initialize(self, db):
-        self.db = db
-
     @authenticated
     def get(self):
-        self.render("adminpanel.html", **{"schools":self.db.schools, "users":self.db.users})
+        self.username = tornado.escape.json_decode(self.get_secure_cookie("user"))
+
+        with self.db.session_scope() as session:
+            self.user = self.db.fetch_user_by_name(session, self.username)
+
+        self.data = {"user":self.user, "auth":True}
+        self.data["schools"] = self.db.schools
+        self.data["users"] = self.db.users
+
+        self.render("adminpanel.html", **self.data)
+
 
     @authenticated
     def post(self):
+        self.username = tornado.escape.json_decode(self.get_secure_cookie("user"))
+        with self.db.session_scope() as session:
+            self.user = self.db.fetch_user_by_name(session, self.username)
+        self.data["user"] = self.user
+        
         school_name = str(self.get_argument("school_name", ""))
         school_short = str(self.get_argument("school_short", ""))
+        
         with self.db.session_scope() as session:
             self.db.add_school(session, school_name, school_short)
-        self.render("adminpanel.html", **{"schools":self.db.schools, "users": self.db.users})
+        self.data = {"user":self.user, "auth":True}
+        self.data["schools"] = self.db.schools
+        self.data["users"] = self.db.users
+        
+        self.render("adminpanel.html", **self.data)
 
-    def get_current_user(self):
-        return self.get_secure_cookie("user")
+    
