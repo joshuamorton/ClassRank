@@ -1,11 +1,11 @@
 """
 """
 
-from tornado.web import RequestHandler
+from .BaseHandler import BaseHandler
 
-
-class IndexHandler(RequestHandler):
+class IndexHandler(BaseHandler):
     """
     """
     def get(self):
-        self.render("splash.html")
+        self.render("splash.html", **self.data)
+
