@@ -321,9 +321,9 @@ class Database(object):
             if email_address:
                 changes["email_address"] = email_address
             if first:
-                changes["first"] = first
+                changes["first_name"] = first
             if last:
-                changes["last"] = last
+                changes["last_name"] = last
             if age:
                 changes["age"] = age
             if graduation:
