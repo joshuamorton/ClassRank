@@ -80,9 +80,8 @@ class Database(object):
         finally:
             session.close()
 
-
-    #methods that do things!
-    def fetch_school_by_name(self, session, school_name): #done
+    # methods that do things!
+    def fetch_school_by_name(self, session, school_name):  # done
         """
         """
         try:
@@ -90,8 +89,7 @@ class Database(object):
         except sqlalchemy.orm.exc.NoResultFound:
             raise ItemDoesNotExistError(DatabaseObjects.School, school_name)
 
-
-    def fetch_school_by_id(self, session, schoolid): #done
+    def fetch_school_by_id(self, session, schoolid):  # done
         """
         """
         try:
@@ -99,8 +97,7 @@ class Database(object):
         except sqlalchemy.orm.exc.ObjectDeletedError:
             raise ItemDoesNotExistError(DatabaseObjects.School, schoolid)
 
-
-    def fetch_user_by_name(self, session, user): #done
+    def fetch_user_by_name(self, session, user):  # done
         """
         """
         try:
@@ -108,8 +105,7 @@ class Database(object):
         except sqlalchemy.orm.exc.NoResultFound:
             raise ItemDoesNotExistError(DatabaseObjects.User, user)
 
-
-    def fetch_user_by_id(self, session, userid): #done
+    def fetch_user_by_id(self, session, userid):  # done
         """
         """
         try:
@@ -117,8 +113,7 @@ class Database(object):
         except sqlalchemy.orm.exc.ObjectDeletedError:
             raise ItemDoesNotExistError(DatabaseObjects.User, userid)
 
-
-    def fetch_course_by_name(self, session, school, coursename, semester=None, year=None, professor=None): #done, might want to clean it
+    def fetch_course_by_name(self, session, school, coursename, semester=None, year=None, professor=None):  # done, might want to clean it
         """
         """
         try:
@@ -142,8 +137,7 @@ class Database(object):
         except:
             raise ItemDoesNotExistError(DatabaseObjects.Course, coursename)
 
-
-    def fetch_course_by_id(self, session, courseid): #done
+    def fetch_course_by_id(self, session, courseid):  # done
         """
         """
         try:
@@ -151,8 +145,7 @@ class Database(object):
         except sqlalchemy.orm.exc.ObjectDeletedError:
             raise ItemDoesNotExistError(DatabaseObjects.Course, courseid)
 
-
-    def fetch_rating_by_name(self, session, username, coursename, semester=None, year=None, professor=None): #done
+    def fetch_rating_by_name(self, session, username, coursename, semester=None, year=None, professor=None):  # done
         """
         """
         try:
@@ -173,15 +166,13 @@ class Database(object):
         except:
             raise ItemDoesNotExistError(DatabaseObjects.Course, coursename)
 
-
-    def fetch_rating_by_id(self, session, userid, courseid): #done
+    def fetch_rating_by_id(self, session, userid, courseid):  # done
         """
         """
         try:
             return session.query(self.rating).filter(self.rating.user_id == userid).filter(self.rating.course_id == courseid).one()
         except sqlalchemy.orm.exc.NoResultFound:
             raise ItemDoesNotExistError(DatabaseObjects.Rating, str(userid)+" for "+str(courseid))
-
 
     def school_exists(self, session, school_name=None, school_id=None, school_short=None):  # done
         """
@@ -199,8 +190,7 @@ class Database(object):
         except sqlalchemy.orm.exc.NoResultFound:
             return False
 
-
-    def user_exists(self, session, user_name=None, user_id=None, email_address=None): #done
+    def user_exists(self, session, user_name=None, user_id=None, email_address=None):  # done
         """
         """
         try:
@@ -216,8 +206,7 @@ class Database(object):
         except sqlalchemy.orm.exc.NoResultFound:
             return False
 
-
-    def course_exists(self, session, coursename=None, course_id=None, school=None, school_id=None, semester=None, year=None, professor=None): #done
+    def course_exists(self, session, coursename=None, course_id=None, school=None, school_id=None, semester=None, year=None, professor=None):  # done
         """
         """
         try:
@@ -240,8 +229,7 @@ class Database(object):
         except sqlalchemy.orm.exc.NoResultFound:
             return False
 
-
-    def rating_exists(self, session, username, coursename, semester=None, year=None, professor=None): #done
+    def rating_exists(self, session, username, coursename, semester=None, year=None, professor=None):  # done
         if self.user_exists(session, user_name=username):
             user = self.fetch_user_by_name(session, username)
             userid = user.user_id
@@ -259,15 +247,13 @@ class Database(object):
         except ItemDoesNotExistError:
             return False
 
-
-    def add_school(self, session, school_name, school_identifier): #done
+    def add_school(self, session, school_name, school_identifier):  # done
         if not self.school_exists(session, school_short=school_identifier):
             session.add(self.school(school_name=school_name, school_short=school_identifier))
             return True
         return False
 
-
-    def add_user(self, session, username, email, password, school, first=None, last=None, admin=False, mod=False): #done
+    def add_user(self, session, username, email, password, school, first=None, last=None, admin=False, mod=False):  # done
         if not self.user_exists(session, user_name=username):
             salt = str(int(time.time()))
             pwhash = scrypt.hash(password, salt, self.hashlength)
@@ -277,8 +263,7 @@ class Database(object):
                 return True
             return False
 
-
-    def add_course(self, session, school, coursename, identifier, professor=None, year=None, semester=None): #done
+    def add_course(self, session, school, coursename, identifier, professor=None, year=None, semester=None):  # done
         if not self.course_exists(session, school=school, coursename=identifier, professor=professor, year=year, semester=semester):
             if self.school_exists(session, school_short=school):
                 schoolid = self.fetch_school_by_name(session, school).school_id
@@ -286,8 +271,7 @@ class Database(object):
                 return True
         return False
 
-
-    def add_rating(self, session, username, coursename, semester=None, year=None, professor=None, rating=None, grade=None, difficulty=None): #done
+    def add_rating(self, session, username, coursename, semester=None, year=None, professor=None, rating=None, grade=None, difficulty=None):  # done
         if not self.rating_exists(session, username, coursename, semester=semester, year=year, professor=professor):
             user = self.fetch_user_by_name(session, username)
             userid = user.user_id
@@ -298,8 +282,7 @@ class Database(object):
             return True
         return False
 
-
-    def remove_rating(self, session, username, coursename, semester=None, year=None, professor=None): #done, this can be made better
+    def remove_rating(self, session, username, coursename, semester=None, year=None, professor=None):  # done, this can be made better
         if self.rating_exists(session, username, coursename, semester=semester, year=year, professor=professor):
             user = self.fetch_user_by_name(session, username)
             userid = user.user_id
@@ -308,14 +291,14 @@ class Database(object):
             courseid = self.fetch_course_by_name(session, schoolname, coursename=coursename, semester=semester, year=year, professor=professor).course_id
             session.query(self.rating).filter(self.rating.user_id==userid, self.rating.course_id==courseid).delete()
 
-    def remove_user(self, session, username): #done
+    def remove_user(self, session, username):  # done
         if self.user_exists(session, username):
             user = session.query(self.user).filter(self.user.user_name==username).one()
             session.delete(user)
 
-    #neither schools nor courses can be removed
+    # neither schools nor courses can be removed
 
-    def update_user(self, session, username, email_address=None, first=None, last=None, age=None, graduation=None, admin=None, mod=None): #done
+    def update_user(self, session, username, email_address=None, first=None, last=None, age=None, graduation=None, admin=None, mod=None):  # done
         if self.user_exists(session, username):
             changes = {}
             if email_address:
@@ -335,8 +318,7 @@ class Database(object):
 
             session.query(self.user).filter(self.user.user_name==username).update(changes)
 
-
-    def update_course(self, session, school, coursename, oldsem=None, oldyear=None, oldprof=None, identifier=None, semester=None, year=None, professor=None): #done
+    def update_course(self, session, school, coursename, oldsem=None, oldyear=None, oldprof=None, identifier=None, semester=None, year=None, professor=None):  # done
         if self.course_exists(session, school=school, coursename=coursename, semester=oldsem, year=oldyear, professor=oldprof):
             courseid = self.fetch_course_by_name(session, school, coursename, semester=oldsem, year=oldyear, professor=oldprof).course_id
             changes = {}
@@ -351,8 +333,7 @@ class Database(object):
 
             session.query(self.course).filter(self.course.course_id==courseid).update(changes)
 
-
-    def update_rating(self, session, username, coursename, oldsem=None, oldyear=None, oldprof=None, semester=None, year=None, professor=None, rating=None, grade=None, difficulty=None): #done
+    def update_rating(self, session, username, coursename, oldsem=None, oldyear=None, oldprof=None, semester=None, year=None, professor=None, rating=None, grade=None, difficulty=None):  # done
         if self.rating_exists(session, username, coursename, semester=oldsem, year=oldyear, professor=oldprof):
             rated = self.fetch_rating_by_name(session, username, coursename, semester=oldsem, year=oldyear, professor=oldprof)
             userid = rated.user_id

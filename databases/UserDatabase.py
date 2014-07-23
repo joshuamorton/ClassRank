@@ -30,27 +30,26 @@ class UserDatabase(object):
             """
             """
             __tablename__ = "users"
-            #signup info
+            # signup info
             user_id = Column(sqlalchemy.Integer, primary_key=True)
             user_name = Column(String(32), nullable=False, unique=True)
             email_address = Column(String(64), nullable=False, unique=True)
             password_hash = Column(String(hashlength), nullable=False)
             password_salt = Column(String(16), nullable=False)
-            #personal information
+            # personal information
             first_name = Column(String(16), nullable=True)
             last_name = Column(String(16), nullable=True)
             age = Column(sqlalchemy.Integer, nullable=True)
             graduation = Column(sqlalchemy.Integer, nullable=True)
-            #status
+            # status
             admin = Column(sqlalchemy.Boolean, default=False, nullable=False)
             moderator = Column(sqlalchemy.Boolean, default=False, nullable=False)
-            #relations
+            # relations
             school_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("schools.school_id"))
-            #ratings = sqlalchemy.orm.relationship(rating_, backref="user", cascade="all, delete, delete-orphan")
-            #there seem to be errors thrown when I include that line, I have absolutely no idea why, and
-            #everything works fine without it.  Strange
+            # ratings = sqlalchemy.orm.relationship(rating_, backref="user", cascade="all, delete, delete-orphan")
+            # there seem to be errors thrown when I include that line, I have absolutely no idea why, and
+            # everything works fine without it.  Strange
             courses = sqlalchemy.orm.relationship(course_, secondary="ratings", backref="user")
-
 
             def __str__(self):
                 """
@@ -63,7 +62,6 @@ class UserDatabase(object):
                 return "<User {} ({} {}) at {}>".format(self.user_name, self.first_name or "", self.last_name or "", self.email_address)
 
         this.class_ = UserTable
-
 
     def create(this):
         """
