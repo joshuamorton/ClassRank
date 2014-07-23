@@ -30,14 +30,13 @@ class SchoolDatabase(object):
             """
             """
             __tablename__ = "schools"
-            #creation info
+            # creation info
             school_id = Column(sqlalchemy.Integer, primary_key=True)
             school_name = Column(String(64), nullable=False)
             school_short = Column(String(32), nullable=False)
-            #relations
+            # relations
             courses = sqlalchemy.orm.relationship(course_, backref="school")
             students = sqlalchemy.orm.relationship(user_, backref="school")
-            
 
             def __str__(self):
                 """
@@ -50,7 +49,6 @@ class SchoolDatabase(object):
                 return "<School {} ({})>".format(self.school_name, self.school_short or "")
 
         this.class_ = SchoolTable
-
 
     def create(this):
         """
