@@ -31,4 +31,19 @@ class BaseHandler(RequestHandler):
             self.user = self.db.fetch_user_by_name(session, self.username)
         return self.user
 
+    def validate_form(self, **kwargs):
+        """
+        kwargs should be a dict<formname : tuple(value, type(value))>
+        """
+        result = {}
+        for form in kwargs:
+            try:
+                result[form] = kwargs[form][1](kwargs[form][0])
+                if result[form] == "":
+                    result[form] = None
+            except:
+                result[form] = None
+        return result
+
     #do not override get_template_namespace()
+    

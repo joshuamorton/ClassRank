@@ -21,15 +21,19 @@ class SettingsHandler(BaseHandler):
         first_name = self.get_argument("fname", default=None, strip=True)
         last_name = self.get_argument("lname", default=None, strip=True)
         email = self.get_argument("email", default=None, strip=True)
-        age = int(self.get_argument("age", default=0, strip=True))
-        grad = int(self.get_argument("grad", default=0, strip=True))
-        if age == 0:
-            age = None
-        if grad == 0:
-            grad = None
+        age = self.get_argument("age", default=0, strip=True)
+        grad = self.get_argument("grad", default=0, strip=True)
 
+        values = {
+            "first":(first_name, str), 
+            "last":(last_name, str), 
+            "email_address":(email,str), 
+            "age":(age,int),
+            "graduation":(grad,int)}
+        values = self.validate_form(**values)
         with self.db.session_scope() as session:
-            self.db.update_user(session, self.username, first=first_name, last=last_name, email_address=email, age=age, graduation=grad)
+            if {values[key] for key in values} != {None}:
+                self.db.update_user(session, self.username, **values)
 
 
 
@@ -51,4 +55,3 @@ class SettingsHandler(BaseHandler):
         namespace = dict(fetch_school=fetch_school,**namespace)
         namespace.update(self.ui)
         return namespace
-

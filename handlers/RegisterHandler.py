@@ -20,6 +20,6 @@ class RegisterHandler(BaseHandler):
         if username != "" and email != "" and password == password2 and school != "" and len(password) < 256:
             with self.db.session_scope() as session:
                 self.db.add_user(session, username, email, password, school)
-            self.redirect("/login", **self.data)
+            self.redirect("/login")
         else:
-            self.redirect("/register", **self.data)
+            self.redirect("/register")

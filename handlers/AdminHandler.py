@@ -35,3 +35,4 @@ class AdminHandler(BaseHandler):
             print("cleared cookie")
             self.clear_cookie("user")
             self.redirect("/admin")
+            
