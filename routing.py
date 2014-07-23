@@ -20,6 +20,8 @@ from handlers.ModHandler import ModHandler
 from api.handlers.ApiHome import ApiHome
 from api.handlers.ApiSchool import ApiSchool
 from api.handlers.ApiSchools import ApiSchools
+from api.handlers.ApiUsers import ApiUsers
+from api.handlers.ApiUser import ApiUser
 
 
 from databases.database import Database
@@ -49,14 +51,29 @@ class_rank = Application([
     (r'/dashboard/?', DashHandler, dict(db=db)),
     (r'/modpanel/?', ModHandler, dict(db=db)),
     (r'/settings/?', SettingsHandler, dict(db=db)),
-    # catches for example 
+    # catches the following:
     #     /api/school/123
     #     /api/school/123
     #     /api/school/Georgia_Tech
     #     /api/school/123/
     #     /api/school/Georgia_Tech.json
     (r'/api/school/(.+?)(?:/?|(?:\.json)?)', ApiSchool, dict(db=db)),
+    # catches the following:
+    #     /api/schools
+    #     /api/schools/
+    #     /api/schools.json
     (r'/api/schools(:?/|\.json)?', ApiSchools, dict(db=db)),
+    # catches the following:
+    #     /api/user/123
+    #     /api/user/jmorton
+    #     /api/user/123/
+    #     /api/jmorton.json
+    (r'/api/user/(.+?)(?:/?|(?:\.json)?)', ApiUser, dict(db=db)),
+    # catches the following:
+    #     /api/schools
+    #     /api/schools/
+    #     /api/schools.json
+    (r'/api/users(:?/|\.json)?', ApiUsers, dict(db=db)),
     (r'/api/?', ApiHome, dict(db=db)),
     # user/(#####)
     # school/(#####)
