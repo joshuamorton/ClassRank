@@ -25,9 +25,23 @@
                     </table>
                 <h2>Users</h2>
                     <table class="pure-table pure-table-bordered">
-                        <thead><th>User id</th><th>School id</th><th>Username</th><th>Email address</th></thead>
+                        <thead><th>User id</th><th>School id</th><th>Username</th><th>Email address</th><th>Mod?</th><th>Admin?</th></thead>
                         {%for otheruser in users %}
-                            <tr><td>{{otheruser.user_id}}</td><td>{{otheruser.school_id}}</td><td>{{otheruser.user_name}}</td><td>{{otheruser.email_address}}</td></tr>
+                            <tr><td>{{otheruser.user_id}}</td>
+                                <td>{{otheruser.school_id}}</td>
+                                <td>{{otheruser.user_name}}</td>
+                                <td>{{otheruser.email_address}}</td>
+                                <td style="background-color:{{'#78e700' if otheruser.moderator else '#e70005'}}">
+                                    <a href="/api/toggle/moderator/{{otheruser.user_id}}">
+                                        {{otheruser.moderator}}
+                                    </a>
+                                </td>
+                                <td style="background-color:{{'#78e700' if otheruser.admin else '#e70005'}}">
+                                    <a href="/api/toggle/admin/{{otheruser.user_id}}">
+                                        {{otheruser.admin}}
+                                    </a>
+                                </td>
+                                    </tr>
                         {% end for %}
                     </table>
             </div>
