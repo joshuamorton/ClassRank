@@ -18,7 +18,7 @@
                 </form>
                 <h2>Schools</h2>
                     <table class="pure-table pure-table-bordered">
-                    <thead><th>school id</th><th>School Name</th><th>School Abbreviation</th></thead>
+                    <thead><th>school id</th><th>School Name</th><th>School Abbreviation</th><th>Users</th><th>Courses</th></thead>
                     {% for school in schools %}
                         <tr><td>{{school.school_id}}</td><td>{{school.school_name}}</td><td>{{school.school_short}}</td></tr>
                     {% end for %}

@@ -26,7 +26,7 @@ class ApiSchool(BaseHandler):
                     values["school_name"] = school.school_name
                     values["school_short"] = school.school_short
                     values["school_id"] = school.school_id
-                    values["courses"] = [str(course.course_name) for course in school.courses]
+                    values["courses"] = [str(course.identifier) for course in school.courses]
                     values["studends"] = [str(student.user_name) for student in school.students]
 
                     self.write(self.render_object(values))
