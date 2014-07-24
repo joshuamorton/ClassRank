@@ -23,7 +23,7 @@ class BaseHandler(RequestHandler):
         if self.get_secure_cookie("user"):
             self.username = tornado.escape.json_decode(self.get_secure_cookie("user"))
         self.db = db
-        self.data = {"auth":False, "user":None}
+        self.data = {"auth":False, "user":None, "socketbase":"ws://localhost:8888/"}
 
     def get_user_obj(self):
         self.username = tornado.escape.json_decode(self.get_secure_cookie("user"))

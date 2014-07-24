@@ -2,7 +2,6 @@
 """
 from tornado.web import authenticated
 from .BaseHandler import BaseHandler
-import tornado
 
 
 class AdminpanelHandler(BaseHandler):
@@ -10,16 +9,14 @@ class AdminpanelHandler(BaseHandler):
     """
     @authenticated
     def get(self):
-        self.username = tornado.escape.json_decode(self.get_secure_cookie("user"))
+        self.get_user_obj()
 
-        with self.db.session_scope() as session:
-            self.user = self.db.fetch_user_by_name(session, self.username)
+        self.data["auth"] = True
+        self.data["schools"] = self.db.schools
+        self.data["users"] = self.db.users
+        self.data["user"] = self.user
 
-            self.data = {"user":self.user, "auth":True, "session":session}
-            self.data["schools"] = self.db.schools
-            self.data["users"] = self.db.users
-
-            self.render("adminpanel.html", **self.data)
+        self.render("adminpanel.html", **self.data)
 
 
     @authenticated

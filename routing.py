@@ -22,8 +22,7 @@ from api.handlers.ApiSchool import ApiSchool
 from api.handlers.ApiSchools import ApiSchools
 from api.handlers.ApiUsers import ApiUsers
 from api.handlers.ApiUser import ApiUser
-from api.handlers.ApiToggleMod import ApiToggleMod
-from api.handlers.ApiToggleAdmin import ApiToggleAdmin
+from api.handlers.ApiToggleSocket import ApiToggleSocket
 
 
 from databases.database import Database
@@ -76,9 +75,7 @@ class_rank = Application([
     #     /api/schools/
     #     /api/schools.json
     (r'/api/users(:?/|\.json)?', ApiUsers, dict(db=db)),
-    (r'/api/toggle/admin/(\d+)/?', ApiToggleAdmin, dict(db=db)),
-    (r'/api/toggle/moderator/(\d+)/?', ApiToggleMod, dict(db=db)),
-
+    (r'/api/toggle/?', ApiToggleSocket, dict(db=db)),
     (r'/api/?', ApiHome, dict(db=db)),
     # user/(#####)
     # school/(#####)
