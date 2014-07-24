@@ -36,6 +36,7 @@ class UserDatabase(object):
             email_address = Column(String(64), nullable=False, unique=True)
             password_hash = Column(String(hashlength), nullable=False)
             password_salt = Column(String(16), nullable=False)
+            apikey = Column(String(64), nullable=False)
             # personal information
             first_name = Column(String(16), nullable=True)
             last_name = Column(String(16), nullable=True)

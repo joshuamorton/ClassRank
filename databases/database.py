@@ -17,6 +17,7 @@ from . import RatingDatabase
 from . import SchoolDatabase
 import time  # for creating hash salts
 import scrypt  # for hashing passwords
+import hashlib
 
 
 class Database(object):
@@ -257,9 +258,10 @@ class Database(object):
         if not self.user_exists(session, user_name=username):
             salt = str(int(time.time()))
             pwhash = scrypt.hash(password, salt, self.hashlength)
+            apikey = hashlib.sha256(pwhash).hexdigest()
             if self.school_exists(session, school_short=school):
                 schoolid = self.fetch_school_by_name(session, school).school_id
-                session.add(self.user(user_name=username, email_address=email, password_hash=pwhash, password_salt=salt, school_id=schoolid, first_name=first, last_name=last, admin=admin, moderator=mod))
+                session.add(self.user(user_name=username, email_address=email, password_hash=pwhash, password_salt=salt, school_id=schoolid, first_name=first, last_name=last, admin=admin, moderator=mod, apikey=apikey))
                 return True
             return False
 
