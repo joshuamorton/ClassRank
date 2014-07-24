@@ -17,6 +17,9 @@ class ApiToggleSocket(BaseSocket):
                     toggled_user.moderator = not toggled_user.moderator
                 elif data["role"] == "admin" and data["username"] != toggled_user.user_name and self.user.admin:
                     toggled_user.admin = not toggled_user.admin
-            self.write_message(json_encode({"status":"toggled"}))
+                else:
+                    self.write_message(json_encode({"stat":"failed"}))
+                    return
+            self.write_message(json_encode({"stat":"toggled"}))
         else:
-            self.write_message(json_encode({"status":"failed"}))
+            self.write_message(json_encode({"stat":"failed"}))

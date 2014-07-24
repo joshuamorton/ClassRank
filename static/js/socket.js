@@ -1,4 +1,4 @@
-function makeConnection(socket_host, message){
+function makeConnection(socket_host, message, callback, clickEvent){
     /*
      * A class to make doing websocket requests much, erm, easier.
      * socket_url is the url of the websocket we will be communicating with
@@ -16,6 +16,6 @@ function makeConnection(socket_host, message){
     socket.onmessage = function(event) {
         response = JSON.parse(event.data);
         socket.close();
+        callback(response, clickEvent);
     }
-    return response;
 }

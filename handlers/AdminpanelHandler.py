@@ -13,6 +13,12 @@ class AdminpanelHandler(BaseHandler):
 
         self.data["auth"] = True
         self.data["schools"] = self.db.schools
+        #this I would consider the blackest of magicks
+        with self.db.session_scope() as session:
+            for school in self.data["schools"]:
+                session.add(school)
+                school.numcourses = len(school.courses)
+                school.numstudents = len(school.students)
         self.data["users"] = self.db.users
         self.data["user"] = self.user
 

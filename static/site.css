@@ -1,11 +1,9 @@
-tr
+.True
 {
-    padding: 10px;
-    border: 10px;
-    margin: 10px;
+    background-color: #78e700 !important;
 }
 
-td
+.False
 {
-    padding: 10 10 10 10;
+    background-color: #e70005 !important;
 }
