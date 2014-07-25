@@ -41,17 +41,28 @@ db = Database()
 
 # a list of web routes and the objects to which they connect
 class_rank = Application([
+    # things relating to the homepage
     (r'/', IndexHandler, dict(db=db)),
     (r'/index/?', IndexHandler, dict(db=db)),
-    (r'/login/?', LoginHandler, dict(db=db)),
+
+    # authentication/signin
     (r'/register/?', RegisterHandler, dict(db=db)),
+    (r'/login/?', LoginHandler, dict(db=db)),
     (r'/logout/?', LogoutHandler, dict(db=db)),
+
+    #require authentication for normal users
     (r'/welcome/?', WelcomeHandler, dict(db=db)),
-    (r'/app/?', AppHandler, dict(db=db)),
-    (r'/adminpanel/?', AdminpanelHandler, dict(db=db)),
-    (r'/dashboard/?', DashHandler, dict(db=db)),
-    (r'/modpanel/?', ModHandler, dict(db=db)),
+    (r'/dash/?', DashHandler, dict(db=db)),  # partial
+    (r'/app/?', AppHandler, dict(db=db)),  # partial
     (r'/settings/?', SettingsHandler, dict(db=db)),
+    
+    # moderator only
+    (r'/modpanel/?', ModHandler, dict(db=db)),
+
+    # admin only
+    (r'/adminpanel/?', AdminpanelHandler, dict(db=db)),
+
+    # api-----------------------------------------------------------------------
     # catches the following:
     #     /api/school/123
     #     /api/school/123
@@ -75,13 +86,11 @@ class_rank = Application([
     #     /api/schools/
     #     /api/schools.json
     (r'/api/users(:?/|\.json)?', ApiUsers, dict(db=db)),
-    (r'/api/toggle/?', ApiToggleSocket, dict(db=db)),
+    (r'/api/toggle/?', ApiToggleSocket, dict(db=db)),  # websocket
     (r'/api/?', ApiHome, dict(db=db)),
-    # user/(#####)
-    # school/(#####)
-    # course/(#####)/(#####)
+    # user/(#####) #maybe?
     # user/user_name
-    # school/school_abbr
+    # course/(#####)/(#####) #maybe
     # course/school_abbr/(#####)
     # course/school_abbr/course_abbr
     # adminpanel/schools
@@ -94,7 +103,6 @@ class_rank = Application([
 
 
 def runserver():
-    # there will be multiple collaborative filter instances having to do with the different things
     class_rank.listen(8888)
     ioloop.IOLoop.instance().start()
 
