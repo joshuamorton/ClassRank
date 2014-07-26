@@ -17,6 +17,7 @@ from handlers.AdminpanelHandler import AdminpanelHandler
 from handlers.DashHandler import DashHandler
 from handlers.SettingsHandler import SettingsHandler
 from handlers.ModHandler import ModHandler
+from handlers.AdminSchoolHandler import AdminSchoolHandler
 from api.handlers.ApiHome import ApiHome
 from api.handlers.ApiSchool import ApiSchool
 from api.handlers.ApiSchools import ApiSchools
@@ -60,6 +61,7 @@ class_rank = Application([
     (r'/modpanel/?', ModHandler, dict(db=db)),
 
     # admin only
+    (r'/adminpanel/school/(\d+)/?', AdminSchoolHandler, dict(db=db)),
     (r'/adminpanel/?', AdminpanelHandler, dict(db=db)),
 
     # api-----------------------------------------------------------------------

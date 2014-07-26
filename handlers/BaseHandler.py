@@ -45,5 +45,19 @@ class BaseHandler(RequestHandler):
                 result[form] = None
         return result
 
+    def validate_item(self, form_item, type_):
+        """
+        Validates the input from a form, given a string and the type of the item
+            this returns the item converted to that type or None, if it can't be
+            converted or the form is blank
+        """
+        if form_item == "":
+            return None
+        else:
+            try:
+                return type_(form_item)
+            except TypeError:
+                return None
+
     #do not override get_template_namespace()
     
