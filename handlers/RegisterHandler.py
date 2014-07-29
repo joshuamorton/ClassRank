@@ -11,11 +11,11 @@ class RegisterHandler(BaseHandler):
         self.render("register.html", **self.data)
 
     def post(self):
-        username = self.get_argument("username", "")
-        email = self.get_argument("email", "")
-        school = self.get_argument("school", "")
-        password = self.get_argument("password", "")
-        password2 = self.get_argument("password2", "")
+        username = self.validate_item(self.get_argument("username", ""), str)
+        email = self.validate_item(self.get_argument("email", ""), str)
+        school = self.validate_item(self.get_argument("school", ""), str)
+        password = self.validate_item(self.get_argument("password", ""), str)
+        password2 = self.validate_item(self.get_argument("password2", ""), str)
 
         if username != "" and email != "" and password == password2 and school != "" and len(password) < 256:
             with self.db.session_scope() as session:

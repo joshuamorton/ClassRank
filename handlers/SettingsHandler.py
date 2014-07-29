@@ -1,6 +1,3 @@
-"""
-"""
-
 from tornado.web import authenticated
 from .BaseHandler import BaseHandler
 

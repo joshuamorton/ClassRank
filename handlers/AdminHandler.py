@@ -13,8 +13,8 @@ class AdminHandler(BaseHandler):
         self.render("adminlogin.html", **self.data)
 
     def post(self):
-        username = str(self.get_argument("username", ""))
-        password = str(self.get_argument("password", ""))
+        username = self.validate_item(self.get_argument("username", ""), str)
+        password = self.validate_item(self.get_argument("password", ""), str)
 
         #print("username = "+username+" password = "+password) #dat security
 

@@ -14,8 +14,8 @@ class LoginHandler(BaseHandler):
         self.render("login.html", **self.data)
 
     def post(self):
-        username = self.get_argument("username", "")
-        password = self.get_argument("password", "")
+        username = self.validate_item(self.get_argument("username", ""), str)
+        password =self.validate_item(self.get_argument("password", ""), str)
 
         if self.is_authorized(username, password):
             self.authorize(username)

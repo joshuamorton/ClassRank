@@ -29,9 +29,9 @@ class AdminpanelHandler(BaseHandler):
     def post(self):
         self.user = self.get_user_obj()
         
-        school_name = str(self.get_argument("school_name", ""))
-        school_short = str(self.get_argument("school_short", ""))
-        if not all([school_name == "", school_short ==""]):
+        school_name = self.validate_item(self.get_argument("school_name", ""), str)
+        school_short = self.validate_item(self.get_argument("school_short", ""), str)
+        if all([school_name, school_short]):
             with self.db.session_scope() as session:
                 self.db.add_school(session, school_name, school_short)
 
