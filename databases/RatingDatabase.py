@@ -27,7 +27,19 @@ class RatingDatabase(object):
             # attributes
             rating = Column(sqlalchemy.Integer, nullable=True)  # how much one liked the course wholistically
             grade = Column(sqlalchemy.Integer, nullable=True)  # how well the student did
-            difficulty = Column(sqlalchemy.Integer, nullable=True)  # how difficult they felt the course was
+            rigor = Column(sqlalchemy.Integer, nullable=True)  # overall how challenging the course was
+            utility = Column(sqlalchemy.Integer, nullable=True)
+            # these two are the difference between, for example, a course with assignments that are 300 simple math problems
+            # and a course where assignments are 1-2 immensly difficult proofs, such things appeal to different people
+            workload = Column(sqlalchemy.Integer, nullable=True)  # how much work was given
+            difficulty = Column(sqlalchemy.Integer, nullable=True)  # how hard assignments were
+            time = Column(sqlalchemy.Integer, nullable=True)  # hours spent out of class per week
+
+            #professor related stuff
+            attendence = Column(sqlalchemy.Integer, nullable=True)  # some metric for how relevant attendence is
+            professor = Column(sqlalchemy.Integer, nullable=True)  # how good the professor is
+            interactivity = Column(sqlalchemy.Integer, nullable=True)  # a metric for how much the prof interacts with students
+
             year = Column(sqlalchemy.Integer, nullable=True)  # year you took it
             professor = Column(String(64), nullable=True)  # prof that taught it
             semester = Column(String(4), nullable=True)  # semester, spr, sum, fall, wint
