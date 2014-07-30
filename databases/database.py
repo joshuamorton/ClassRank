@@ -11,14 +11,17 @@ from contextlib import contextmanager
 import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
+import time  # for creating hash salts
+import scrypt  # for hashing passwords
+import hashlib  # for api keys
+
 from . import UserDatabase
 from . import CourseDatabase
 from . import RatingDatabase
 from . import SchoolDatabase
-import time  # for creating hash salts
-import scrypt  # for hashing passwords
-import hashlib
-
+from . import ProfessorDatabase
+from . import SubCourseDatabase
+from . import SubjectDatabase
 
 class Database(object):
     """
@@ -53,13 +56,22 @@ class Database(object):
         self.metadata = self.base.metadata
 
         # the three main parts of the overall database system
+        self.subject = SubjectDatabase.SubjectDatabase(self.base).create()
         self.course = CourseDatabase.CourseDatabase(self.base).create()
         self.rating = RatingDatabase.RatingDatabase(self.base, self.course).create()
         self.user = UserDatabase.UserDatabase(self.base, self.hashlength, self.course, self.rating).create()
         self.school = SchoolDatabase.SchoolDatabase(self.base, self.course, self.user).create()
+        self.sections = SubCourseDatabase.SubCourseDatabase(self.base, self.course).create()
+        self.professor = ProfessorDatabase.ProfessorDatabase(self.base, self.sections).create()
 
         self.metadata.create_all(self.engine)
         self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine, expire_on_commit=False)
+
+        # on first run, create an admin account
+        if len(self.schools) == 0:
+            with self.session_scope() as session:
+                self.add_school(session, "Admin Academy", "Admin")
+                self.add_user(session, "Admin", "admin@admin.admin", "password", "Admin", admin=True, mod=True)
 
     # the rest is just abstraction to make life less terrible
     @contextmanager

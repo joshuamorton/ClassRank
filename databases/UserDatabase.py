@@ -45,6 +45,7 @@ class UserDatabase(object):
             # status
             admin = Column(sqlalchemy.Boolean, default=False, nullable=False)
             moderator = Column(sqlalchemy.Boolean, default=False, nullable=False)
+            professor = Column(sqlalchemy.Boolean, default=False, nullable=False)
             # relations
             school_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("schools.school_id"))
             # ratings = sqlalchemy.orm.relationship(rating_, backref="user", cascade="all, delete, delete-orphan")
