@@ -33,11 +33,11 @@ class ProfessorDatabase(object):
             # signup info
             prof_id = Column(sqlalchemy.Integer, primary_key=True)
             # personal information
-            first_name = Column(String(16), nullable=True)
-            last_name = Column(String(16), nullable=True)
+            name = Column(String(32), nullable=False)
 
             linked_user_account = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("users.user_id"), nullable=True)
             school_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("schools.school_id"))
+            sections = sqlalchemy.orm.relationship(course_, backref="professor")
 
             def __str__(self):
                 """

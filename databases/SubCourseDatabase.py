@@ -20,17 +20,18 @@ class SubCourseDatabase(object):
         class SubCourseTable(base_class):
             """
             """
-            __tablename__ = "subcourses"
+            __tablename__ = "sections"
             # creation info
             section_id = Column(sqlalchemy.Integer, primary_key=True)
             parent_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("courses.school_id"))
             # optional info
-            professor = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("professors.prof_id"))
+            professor_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("professors.prof_id"))
             year = Column(sqlalchemy.Integer, nullable=True)
             semester = Column(Enum("Spring", "Summer", "Fall", "Winter"), nullable=True)
 
             sqlalchemy.UniqueConstraint("parent_id", "professor", "year", "semester")
             course = sqlalchemy.orm.relationship(course_, backref="sections")
+
 
 
             def __str__(self):

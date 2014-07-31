@@ -33,7 +33,7 @@ class SubjectDatabase(object):
             # signup info
             subject_id = Column(sqlalchemy.Integer, primary_key=True)
             # personal information
-            name = Column(String(32), nullable=True)
+            subject_name = Column(String(32), nullable=True)
 
             def __str__(self):
                 """

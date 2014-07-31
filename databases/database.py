@@ -58,10 +58,10 @@ class Database(object):
         # the three main parts of the overall database system
         self.subject = SubjectDatabase.SubjectDatabase(self.base).create()
         self.course = CourseDatabase.CourseDatabase(self.base).create()
-        self.rating = RatingDatabase.RatingDatabase(self.base, self.course).create()
-        self.user = UserDatabase.UserDatabase(self.base, self.hashlength, self.course, self.rating).create()
-        self.school = SchoolDatabase.SchoolDatabase(self.base, self.course, self.user).create()
         self.section = SubCourseDatabase.SubCourseDatabase(self.base, self.course).create()
+        self.rating = RatingDatabase.RatingDatabase(self.base, self.section).create()
+        self.user = UserDatabase.UserDatabase(self.base, self.hashlength, self.section, self.rating).create()
+        self.school = SchoolDatabase.SchoolDatabase(self.base, self.course, self.user).create()
         self.professor = ProfessorDatabase.ProfessorDatabase(self.base, self.section).create()
 
         self.metadata.create_all(self.engine)
@@ -73,6 +73,7 @@ class Database(object):
             with self as db:
                 db += db.new_school("Admin Academy", "Admin")
                 db += db.new_user("Admin", "admin@admin.admin", "password", "Admin", admin=True, moderator=True)
+
 
     # the rest is just abstraction to make life less terrible
     @contextmanager
@@ -95,60 +96,148 @@ class Database(object):
             session.close()
 
 
-    def new_school(self, name, abbreviataion):
+    @contextmanager
+    def _internal_scope(self, session=None):
+        """
+        Internal session manager that makes sure that the "correct" session is being used
+        Will provide a session to the action, first tries to provide the session in the
+            datbase object if that is availible (self.session), then tries a session passed
+            in to the function, and finally creates a new session for the single action.
+        In this way, it creates a few new sessions as possible and tries to prevent having
+            multiple simultaneously active sessions
+        """
+        provided_session = None
+        if self.session is not None:
+            provided_session = self.session
+        elif session is not None:
+            provided_session = session
+        else:
+            provided_session = self.sessionmaker()
+
+        try:
+            yield provided_session
+            provided_session.commit()
+        except:
+            provided_session.rollback()
+            raise
+        finally:
+            provided_session.close()
+
+
+    def new_school(self, name, abbreviataion, session=None):
         """
         """
         return self.school(school_name=name, school_short=abbreviataion)
 
 
-    def new_user(self, username, email, password, school, admin=False, moderator=False, professor=False):
+    def new_user(self, username, email, password, school, admin=False, moderator=False, professor=False, session=None):
         """
-        must be used inside the construct "with self as database:"
         """
         try:
-            school_id = self.session.query(self.school).filter_by(school_short=school).one().school_id
+            with self._internal_scope(session) as session:
+                school_id = session.query(self.school).filter_by(school_short=school).one().school_id
         except sqlalchemy.orm.exc.NoResultFound:
             raise ItemDoesNotExistError(DatabaseObjects.School, school)
 
-        pwsalt = str(int(time.time()))
-        pwhash = scrypt.hash(password, pwsalt, self.hashlength)
-        apikey = hashlib.sha256(pwhash).hexdigest()
-        
-        return self.user(school_id = school_id, user_name=username, email_address=email, password_hash=pwhash, password_salt=pwsalt, apikey=apikey, admin=admin, moderator=moderator, professor=professor)
+        query = {}
+        query["password_salt"] = str(int(time.time()))
+        query["password_hash"] = scrypt.hash(password, query["password_salt"], self.hashlength)
+        query["apikey"] = hashlib.sha256(query["password_hash"]).hexdigest()
+        query["school_id"] = school_id
+        query["user_name"] = username
+        query["email_address"] = email
+        query["admin"] = admin
+        query["moderator"] = moderator
+        query["professor"] = professor
+
+        return self.user(**query)
 
 
-    def new_course(self, school, name, identifier, subject=None):
+    def new_course(self, school, name, identifier, subject=None, session=None):
         """
-        must be used inside the construct "with self as database:"
         """
-        try:
-            school_id = self.session.query(self.school).filter_by(school_short=school).one().school_id
-        except sqlalchemy.orm.exc.NoResultFound:
-            raise ItemDoesNotExistError(DatabaseObjects.School, school)
-
-        if subject is not None:
+        with self._internal_scope(session):
             try:
-                subject_id = self.session.query(self.subject).filter_by(name=subject).one().subject_id
+                school_id = session.query(self.school).filter_by(school_short=school).one().school_id
             except sqlalchemy.orm.exc.NoResultFound:
-                raise ItemDoesNotExistError(DatabaseObjects.Subject, name)
-        else:
-            subject_id = None
+                raise ItemDoesNotExistError(DatabaseObjects.School, school)
 
-        return self.course(school_id=school_id, course_name=name, identifier=identifier, subject=subject_id)
+            if subject is not None:
+                try:
+                    subject_id = session.query(self.subject).filter_by(name=subject).one().subject_id
+                except sqlalchemy.orm.exc.NoResultFound:
+                    raise ItemDoesNotExistError(DatabaseObjects.Subject, name)
+            else:
+                subject_id = None
+
+        query = {}
+        query["school_id"]=school_id
+        query["course_name"]=name
+        query["identifier"]=identifier
+        query["subject"]=subject_id
+
+        return self.course(**query)
 
 
-    def new_section(self,):
-        pass
+    def new_section(self, school, course, professor=None, year=None, semester=None, session=None):
+        """
+        """
+        with self._internal_scope(session):
+            try:
+                school_id = session.query(self.school).filter_by(school_short=school).one().school_id
+            except sqlalchemy.orm.exc.NoResultFound:
+                raise ItemDoesNotExistError(DatabaseObjects.School, school)
 
-    def new_subject(self,):
-        pass
+            try:
+                course_id = session.query(self.course).filter_by(school_id=school_id, identifier=course).one().course_id
+            except sqlalchemy.orm.exc.NoResultFound:
+                raise ItemDoesNotExistError(DatabaseObjects.Course, course)
 
-    def new_professor(self,):
-        pass
+            if professor is not None:
+                try:
+                    professor_id = session.query(self.course).filter_by(name=professor).one().professor_id
+                except:
+                    raise ItemDoesNotExistError(DatabaseObjects.Professor, professor)
+            else:
+                professor_id = None
 
-    def new_rating(self,):
-        pass
+        query = {}
+        query["parent_id"] = course_id
+        query["professor_id"] = professor_id
+        query["year"] = year
+        query["semester"] = semester
 
+        return self.section(**query)
+
+
+    def new_subject(self, subject_name, session=None):
+        """
+        """
+        return self.subject(subject_name=subject_name)
+
+
+    def new_professor(self, name, bound_account=None, session=None):
+        """
+        """
+        if bound_account is not None:
+            with self._internal_scope(session):
+                try:
+                    user_id = session.query(self.user).filter_by(user_name=bound_account).one().user_id
+                except sqlalchemy.orm.exc.NoResultFound:
+                    raise ItemDoesNotExistError(DatabaseObjects.Professor, name)
+
+        return self.professor(name=name, bound_account_id=user_id)
+
+
+    def new_rating(self, user, course, rating=None, grade=None, rigor=None, utility=None, workload=None, difficulty=None, time=None, attendence=None, professor=None, interactivty=None, session=None):
+        with self._internal_scope(session):
+            try:
+                user = session.query(self.user).filter_by(user_name=user).one()
+                school_name = user.school.school_short
+            except sqlalchemy.orm.exc.NoResultFound:
+                raise ItemDoesNotExistError(DatabaseObjects.User, user)
+
+        #IN EDIT
 
     def __iadd__(self, other):
         """

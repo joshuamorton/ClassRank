@@ -23,7 +23,7 @@ class RatingDatabase(object):
             __tablename__ = "ratings"
             # creation info
             user_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("users.user_id"), primary_key=True)
-            course_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("courses.course_id"), primary_key=True)
+            course_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("sections.section_id"), primary_key=True)
             # attributes
             rating = Column(sqlalchemy.Integer, nullable=True)  # how much one liked the course wholistically
             grade = Column(sqlalchemy.Integer, nullable=True)  # how well the student did
