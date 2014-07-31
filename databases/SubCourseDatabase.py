@@ -22,7 +22,7 @@ class SubCourseDatabase(object):
             """
             __tablename__ = "subcourses"
             # creation info
-            course_id = Column(sqlalchemy.Integer, primary_key=True)
+            section_id = Column(sqlalchemy.Integer, primary_key=True)
             parent_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("courses.school_id"))
             # optional info
             professor = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("professors.prof_id"))

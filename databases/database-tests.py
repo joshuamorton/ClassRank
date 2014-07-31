@@ -56,7 +56,7 @@ class DatabaseTests(unittest.TestCase):
             self.assertTrue(self.db.school_exists(session, school_short="Georgia Tech"))
             self.assertTrue(self.db.school_exists(session, school_id=3))
             self.assertEqual(self.db.fetch_school_by_name(session, "Georgia Tech").school_name, "Georgia Institute of Technology")
-            self.assertEqual(self.db.fetch_school_by_id(session, 1).school_name, "Georgia Institute of Technology")
+            self.assertEqual(self.db.fetch_school_by_id(session, 2).school_name, "Georgia Institute of Technology")
             self.assertRaises(database.ItemDoesNotExistError, self.db.fetch_school_by_name, session, "help me")
 
     def test_03_add_users(self):

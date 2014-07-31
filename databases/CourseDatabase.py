@@ -26,7 +26,7 @@ class CourseDatabase(object):
             school_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("schools.school_id"))
             course_name = Column(String(64), nullable=True)
             identifier = Column(String(16), nullable=False)
-            subject = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('subjects.subject_id'))  # add the relation
+            subject = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('subjects.subject_id'), nullable=True)  # add the relation
             # optional info
 
             sqlalchemy.UniqueConstraint("identifier", "school_id")
