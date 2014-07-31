@@ -62,7 +62,7 @@ class Database(object):
         self.rating = RatingDatabase.RatingDatabase(self.base, self.section).create()
         self.user = UserDatabase.UserDatabase(self.base, self.hashlength, self.section, self.rating).create()
         self.school = SchoolDatabase.SchoolDatabase(self.base, self.course, self.user).create()
-        self.professor = ProfessorDatabase.ProfessorDatabase(self.base, self.section).create()
+        self.professor = ProfessorDatabase.ProfessorDatabase(self.base, self.section, self.school).create()
 
         self.metadata.create_all(self.engine)
         self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine, expire_on_commit=False)

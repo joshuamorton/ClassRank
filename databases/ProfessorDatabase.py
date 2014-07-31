@@ -13,7 +13,7 @@ class ProfessorDatabase(object):
     I have created a monster
     """
 
-    def __init__(this, base_class, course_):
+    def __init__(this, base_class, course_, school_):
         """
         This instantiates an object with the given settings
             and returns an instance of the new class when create is called
@@ -38,6 +38,7 @@ class ProfessorDatabase(object):
             linked_user_account = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("users.user_id"), nullable=True)
             school_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("schools.school_id"))
             sections = sqlalchemy.orm.relationship(course_, backref="professor")
+            school = sqlalchemy.orm.relationship(school_, backref="professors")
 
             def __str__(self):
                 """
@@ -47,7 +48,7 @@ class ProfessorDatabase(object):
             def __repr__(self):
                 """
                 """
-                return "<Professor {} {} at {}>".format(self.first_name or "", self.last_name or "")
+                return "<Professor {} at {}>".format(self.name, self.school_id)
 
         this.class_ = ProfessorTable
 

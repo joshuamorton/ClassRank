@@ -42,7 +42,7 @@ class SubCourseDatabase(object):
             def __repr__(self):
                 """
                 """
-                return "<Course {} ({})>".format(self.identifier, self.course_name)
+                return "<Section of course {} by {} on {} {}>".format(self.parent_id, self.professor_id, self.semester, self.year)
 
         this.class_ = SubCourseTable
 
