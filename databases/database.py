@@ -15,13 +15,13 @@ import time  # for creating hash salts
 import scrypt  # for hashing passwords
 import hashlib  # for api keys
 
-from . import UserDatabase
-from . import CourseDatabase
-from . import RatingDatabase
-from . import SchoolDatabase
-from . import ProfessorDatabase
-from . import SubCourseDatabase
-from . import SubjectDatabase
+import UserDatabase
+import CourseDatabase
+import RatingDatabase
+import SchoolDatabase
+import ProfessorDatabase
+import SubCourseDatabase
+import SubjectDatabase
 
 class Database(object):
     """
@@ -63,6 +63,7 @@ class Database(object):
         self.user = UserDatabase.UserDatabase(self.base, self.hashlength, self.section, self.rating).create()
         self.school = SchoolDatabase.SchoolDatabase(self.base, self.course, self.user).create()
         self.professor = ProfessorDatabase.ProfessorDatabase(self.base, self.section, self.school).create()
+        self.tables = {"subject":self.subject, "course":self.course, "section":self.section, "rating":self.rating, "user":self.user, "school": self.school, "professor":self.professor}
 
         self.metadata.create_all(self.engine)
         self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine, expire_on_commit=False)
@@ -300,11 +301,22 @@ class Database(object):
         return self
 
 
+    def item(self, table, **kwargs):
+        """
+        utility function for use with the contains syntax
+        """
+        args = {}
+        args["table"] = self.tables[table]
+        args["query"] = kwargs
+        return args
+
     def __contains__(self, other):
         """
         syntactic sugar for checking if the database contains a given item using python's `x in y` syntax
+        should generally be used along with Database.item()
         """
-        pass
+        with self._internal_scope(None) as session:
+            return len(session.query(other["table"]).filter_by(**other["query"]).all()) > 0
 
 
     def __enter__(self):
@@ -453,3 +465,8 @@ class PasswordLengthError(Exception):
 
     def str(self):
         return "User {}'s password ({}) is too long".format(self.user, self.password)
+
+
+if __name__ == "__main__":
+    db = Database(name="test.db")
+    db.item(table="user", user_name="Admin") in db

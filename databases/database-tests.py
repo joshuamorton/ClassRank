@@ -13,7 +13,7 @@ class DatabaseTests(unittest.TestCase):
     def setUpClass(cls):
         try:
             os.remove("./data/Testdb.db")
-        except FileNotFoundError as e:
+        except:
             pass
 
     def setUp(self):
@@ -27,15 +27,11 @@ class DatabaseTests(unittest.TestCase):
         tests creating and deleting an empty database
         """
         self.assertTrue(self.db)
-        with self.db.session_scope() as session:
-            #you can operate on an empty database
-            self.assertFalse(self.db.school_exists(session, school_short="Georgia Tech"))
+        #you can operate on an empty database
+        self.assertTrue(self.db.item(table="user", user_name="Admin") in self.db)
 
         os.remove("./data/Testdb.db")  # hard remove the database file (this should never happen)
         self.assertTrue(self.db)
-        with self.db.session_scope() as session:
-            #when the database doesn't exist, shit breaks yo
-            self.assertRaises(sqlalchemy.exc.OperationalError, self.db.school_exists, session, {"school_short":"Georgia Tech"})
 
     def test_02_add_schools(self):
         #establish a connection
