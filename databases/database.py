@@ -126,12 +126,15 @@ class Database(object):
 
     def new_school(self, name, abbreviataion, session=None):
         """
+        creates a new school object for adding to the database
         """
         return self.school(school_name=name, school_short=abbreviataion)
 
 
     def new_user(self, username, email, password, school, admin=False, moderator=False, professor=False, session=None):
         """
+        creates a new user object to be added to the database
+        will throw errors
         """
         try:
             with self._internal_scope(session) as session:
@@ -155,6 +158,8 @@ class Database(object):
 
     def new_course(self, school, name, identifier, subject=None, session=None):
         """
+        creates a new course with the given parameters
+        this will throw errors
         """
         with self._internal_scope(session):
             try:
@@ -181,6 +186,8 @@ class Database(object):
 
     def new_section(self, school, course, professor=None, year=None, semester=None, session=None):
         """
+        create a new section (subcourse) in the database
+        will throw errors
         """
         with self._internal_scope(session):
             try:
@@ -212,12 +219,14 @@ class Database(object):
 
     def new_subject(self, subject_name, session=None):
         """
+        creates a new subject in the Database, short and sweet
         """
         return self.subject(subject_name=subject_name)
 
 
     def new_professor(self, name, bound_account=None, session=None):
         """
+        adds a new professor to the dataabase
         """
         if bound_account is not None:
             with self._internal_scope(session):
@@ -230,6 +239,10 @@ class Database(object):
 
 
     def new_rating(self, user, course, professor=None, year=None, semester=None, rating=None, grade=None, rigor=None, utility=None, workload=None, difficulty=None, time=None, attendence=None, prof_rate=None, interactivty=None, session=None):
+        """
+        adds a new rating for a section by a user
+        good lord this is suckish
+        """
         with self._internal_scope(session):
             try:
                 user = session.query(self.user).filter_by(user_name=user).one()
@@ -277,6 +290,7 @@ class Database(object):
 
     def __iadd__(self, other):
         """
+        syntactic sugar to add an item to the database with `db += other syntax`
         """
         if self.session is not None:
             self.session.add(other)
@@ -284,6 +298,13 @@ class Database(object):
             with self.session_scope() as session:
                 session.add(other)
         return self
+
+
+    def __contains__(self, other):
+        """
+        syntactic sugar for checking if the database contains a given item using python's `x in y` syntax
+        """
+        pass
 
 
     def __enter__(self):
@@ -306,6 +327,7 @@ class Database(object):
         finally:
             self.session.close()
             self.session = None
+
 
     @property
     def users(self):
@@ -332,6 +354,7 @@ class Database(object):
         with self.session_scope() as session:
             return session.query(self.user).filter(self.user.admin == True).all()
 
+
     @property
     def schools(self):
         """
@@ -340,11 +363,13 @@ class Database(object):
         with self.session_scope() as session:
             return session.query(self.school).all()
 
+
     @property
     def ratings(self):
         with self.session_scope() as session:
             return session.query(self.rating).all()
     
+
     @property
     def courses(self):
         """
@@ -353,16 +378,19 @@ class Database(object):
         with self.session_scope() as session:
             return session.query(self.course).all()
 
+
     @property
     def subjects(self):
         with self.session_scope() as session:
             return session.query(self.subject).all()
 
 
+
 #A collection of error classes raised when either things do or do not exist in the database
 class DatabaseObjects(Enum):
     """
     So enums are beautiful and I love them
+    This one contains information on the different types of objects in the database, for debugging outputs
     """
     School = "School"
     User = "User"
@@ -375,6 +403,7 @@ class DatabaseObjects(Enum):
 
 class Semesters(Enum):
     """
+    An ebum for the four semesters 
     """
     Spring = "Spring"
     Summer = "Summer"
@@ -394,6 +423,7 @@ class ItemExistsError(Exception):
     def __str__(self):
         return "A {} named {} already exists".format(self.identifier.name, self.name)
 
+
 class NoSessionError(Exception):
 
     def __str__(self):
@@ -412,6 +442,7 @@ class ItemDoesNotExistError(Exception):
     def __str__(self):
         return "A {} named {} does not exist".format(self.identifier.name, self.name)
 
+
 class PasswordLengthError(Exception):
     """
     Exception raised when a user's password is too long (hashing 2000 char passwords is bad)
@@ -422,4 +453,3 @@ class PasswordLengthError(Exception):
 
     def str(self):
         return "User {}'s password ({}) is too long".format(self.user, self.password)
-
