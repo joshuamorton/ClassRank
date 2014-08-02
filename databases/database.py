@@ -55,7 +55,7 @@ class Database(object):
         self.base = sqlalchemy.ext.declarative.declarative_base()
         self.metadata = self.base.metadata
 
-        # the three main parts of the overall database system
+        # the tables in the database, some rely on previous ones to be correctly instantiated
         self.subject = SubjectDatabase.SubjectDatabase(self.base).create()
         self.course = CourseDatabase.CourseDatabase(self.base).create()
         self.section = SubCourseDatabase.SubCourseDatabase(self.base, self.course).create()
@@ -229,7 +229,7 @@ class Database(object):
         return self.professor(name=name, bound_account_id=user_id)
 
 
-    def new_rating(self, user, course, rating=None, grade=None, rigor=None, utility=None, workload=None, difficulty=None, time=None, attendence=None, professor=None, interactivty=None, session=None):
+    def new_rating(self, user, course, professor=None, year=None, semester=None, rating=None, grade=None, rigor=None, utility=None, workload=None, difficulty=None, time=None, attendence=None, prof_rate=None, interactivty=None, session=None):
         with self._internal_scope(session):
             try:
                 user = session.query(self.user).filter_by(user_name=user).one()
@@ -237,7 +237,43 @@ class Database(object):
             except sqlalchemy.orm.exc.NoResultFound:
                 raise ItemDoesNotExistError(DatabaseObjects.User, user)
 
-        #IN EDIT
+            try:
+                school_id = session.query(self.school).filter_by(school_short=school_name).one().school_id
+            except sqlalchemy.orm.exc.NoResultFound:
+                raise ItemDoesNotExistError(DatabaseObjects.School, school_name)
+
+            try:
+                course_id = session.query(self.course).filter_by(school_id=school_id, identifier=course).one().course_id
+            except sqlalchemy.orm.exc.NoResultFound:
+                raise ItemDoesNotExistError(DatabaseObjects.Course, course)
+
+            try:
+                section_query = {}
+                section_query["parent_id"] = course_id
+                section_query["professor"] = professor
+                section_query["year"] = year
+                section_query["semester"] = semester
+                section_id = session.query(self.session).filter_by(section_query).one().section_id
+            except sqlalchemy.orm.exc.NoResultFound:
+                raise ItemDoesNotExistError(DatabaseObjects.Section, course+str(semester)+" "+str(year))
+
+
+        query = {}
+        query["user_id"] = user.user_id
+        query["section_id"] = section_id
+        query["rating"] = rating
+        query["grade"] = grade
+        query["rigor"] = rigor
+        query["utility"] = utility
+        query["workload"] = workload
+        query["difficulty"] = difficulty
+        query["time"] = time
+        query["attendence"] = attendence
+        query["interactivty"] = interactivty
+        query["professor"] = prof_rate
+
+        return self.rating(query)
+        
 
     def __iadd__(self, other):
         """
