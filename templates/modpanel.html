@@ -3,7 +3,34 @@
     <head>
         <title>ClassRank</title>
         {% include "head.html" %}
-        <link rel="stylesheet" type="text/css" href="/static/splash.css">
+        <link rel="stylesheet" type="text/css" href="/static/site.css">
+        <script type="text/javascript" src="/static/js/socket.js"></script>
+        <script type="text/javascript">
+            function makerequest(toggled_user_id, role, clickEvent){
+                var data = {
+                    //sets values to be sent to the websocket and then used by the 
+                    username:"{{user.user_name}}",
+                    apikey:"{{user.apikey}}",
+                    role:role,
+                    toggled:toggled_user_id
+                }
+                function anon(returnedObject, clickEvent){
+                    if (returnedObject.stat === "toggled"){
+                        console.log(clickEvent.target);
+                        target = clickEvent.target;
+                        if (target.parentNode.className == "False"){
+                            target.parentNode.className = "True";
+                            target.innerHTML = "True";
+                        } else if (target.parentNode.className == "True"){
+                            target.parentNode.className = "False";
+                            target.innerHTML = "False";
+                        }
+                    }
+                    return null;
+                }
+                var result = makeConnection("{{socketbase}}"+"api/toggle", data, anon, clickEvent);
+            }
+        </script>  
     </head>
     <body>
         <div id="container" class="pure-g">
@@ -46,8 +73,8 @@
                                 <td>{{otheruser.school_id}}</td>
                                 <td>{{otheruser.user_name}}</td>
                                 <td>{{otheruser.email_address}}</td>
-                                <td style="background-color:{{'#78e700' if otheruser.moderator else '#e70005'}}">
-                                    <a href="/api/toggle/moderator/{{otheruser.user_id}}">
+                                <td class="{{otheruser.moderator}}">
+                                    <a href="javascript:void(0);" onclick="makerequest('{{otheruser.user_id}}', 'moderator', event)">
                                         {{otheruser.moderator}}
                                     </a>
                                 </td>
