@@ -61,6 +61,12 @@ class Database(object):
         self.metadata.create_all(self.engine)
         self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine, expire_on_commit=False)
 
+        # on first run, create an admin account
+        if len(self.schools) == 0:
+            with self.session_scope() as session:
+                self.add_school(session, "Admin Academy", "Admin")
+                self.add_user(session, "Admin", "admin@admin.admin", "password", "Admin", admin=True, mod=True)
+
     # the rest is just abstraction to make life less terrible
     @contextmanager
     def session_scope(self):
