@@ -301,14 +301,16 @@ class Database(object):
         return self
 
 
-    def item(self, table, **kwargs):
+    def item(self, table, *,  update=None, **kwargs):
         """
         utility function for use with the contains syntax
         """
         args = {}
         args["table"] = self.tables[table]
         args["query"] = kwargs
+        args["update"] = update
         return args
+
 
     def __contains__(self, other):
         """
@@ -317,6 +319,19 @@ class Database(object):
         """
         with self._internal_scope(None) as session:
             return len(session.query(other["table"]).filter_by(**other["query"]).all()) > 0
+
+
+    def __rshift__(self, other):
+        """
+        syntactic sugar for database updates.  Takes in an item
+        `self.db >> db.item(users, update={dict},  id=5)`
+        and updates it in the database
+        """
+
+        with self._internal_scope(None) as session:
+            session.query(self.tables[other["table"]]).update().where(other["query"]).values(other["update"])
+
+        return None
 
 
     def __enter__(self):
@@ -470,3 +485,6 @@ class PasswordLengthError(Exception):
 if __name__ == "__main__":
     db = Database(name="test.db")
     db.item(table="user", user_name="Admin") in db
+    db += db.user(user_name="jmorton", email_address="josh@xephyr.us", password_hash="123", password_salt="123", apikey="123", admin=True, moderator=True)
+    db.item(table="user", user_name="jmorton") in db
+    db >> db.item("user", update={"first_name":"joshua"}, user_name="jmorton")
