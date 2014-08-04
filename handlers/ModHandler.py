@@ -3,7 +3,6 @@
 
 from tornado.web import authenticated
 from .BaseHandler import BaseHandler
-from collections import defaultdict
 
 class ModHandler(BaseHandler):
     """
@@ -30,13 +29,13 @@ class ModHandler(BaseHandler):
             course_abbreviation = self.validate_item(self.get_argument("course_identifier"), str)
             professor = self.validate_item(self.get_argument("professor", None), str)
             year = self.validate_item(self.get_argument("year", None), int)
-            semesterdict = defaultdict(None)
             # Crappy implementation of the semester Enum
             semesters = {"Fall":"Fall","Spring":"Spr","Summer":"Sum","Winter":"Win"}
-            for k in semesters:
-                semesterdict[k] = semesters[k]
             semester = self.validate_item(self.get_argument("semester", None), str)
-            semester = semesterdict[semester]
+            try:
+                semester = semesters[semester]
+            except KeyError:
+                semester = None
 
             with self.db.session_scope() as session:
                 if all([course_name is not None, course_abbreviation is not None]):
