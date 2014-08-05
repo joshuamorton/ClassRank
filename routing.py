@@ -24,6 +24,7 @@ from api.handlers.ApiSchools import ApiSchools
 from api.handlers.ApiUsers import ApiUsers
 from api.handlers.ApiUser import ApiUser
 from api.handlers.ApiToggleSocket import ApiToggleSocket
+from api.handlers.ApiAddCourse import ApiAddCourse
 
 
 from databases.database import Database
@@ -88,7 +89,10 @@ class_rank = Application([
     #     /api/schools/
     #     /api/schools.json
     (r'/api/users(:?/|\.json)?', ApiUsers, dict(db=db)),
+    # Toggles users being moderators/admins
     (r'/api/toggle/?', ApiToggleSocket, dict(db=db)),  # websocket
+    # Adds a course for a given user
+    (r'/api/add_course/?', ApiAddCourse, dict(db=db)),  # websocket
     (r'/api/?', ApiHome, dict(db=db)),
     # user/(#####) #maybe?
     # user/user_name
