@@ -4,12 +4,7 @@
         <title>ClassRank</title>
         {% include "head.html" %}
         <link rel="stylesheet" type="text/css" href="/static/splash.css">
-        <script type="text/javascript">
-            function addForm(clickEvent){
-                var row = clickEvent.target.parentNode.parentNode;
-                row.innerHTML = "<form class='pure-form'><input type='number' placeholder='Grade'><input type='number' placeholder='Difficulty'><input type='number' placeholder='Rating'><button type='submit' class='pure-button pure-button-primary'>Lets Get it Started!</button></form>";
-            }
-        </script>
+        <link rel="stylesheet" type="text/css" href="/static/font-awesome/css/font-awesome.min.css">
     </head>
     <body>
         <div id="container" class="pure-g">
@@ -18,7 +13,7 @@
                 <h2>Welcome </h2>
                 <h2>Your Courses</h2>
                 <table class="pure-table pure-table-bordered">
-                    <thead><th>Course id</th><th>Course name</th><th>Identifier</th><th>Semester</th><th>Year</th><th>Professor</th></thead>
+                    <thead><th>Course id</th><th>Course name</th><th>Identifier</th><th>Semester</th><th>Year</th><th>Professor</th><th>Rating</th><th>Difficulty</th><th>Grade</th></thead>
                     {% for course in your_courses %}
                     <tr><td>{{course.course_id}}</td>
                         <td>{{course.course_name}}</td>
@@ -26,6 +21,9 @@
                         <td>{{course.semester or "??"}}</td>
                         <td>{{course.year or "??"}}</td>
                         <td>{{course.professor or "??"}}</td>
+                        <td>{{ your_ratings[course.course_id].rating or "--"}}</td>
+                        <td>{{ your_ratings[course.course_id].difficulty or "--"}}</td>
+                        <td>{{ your_ratings[course.course_id].grade or "--"}}</td>
                     </tr>
                     {% end for %}
                 </table>
@@ -39,7 +37,7 @@
                         <td>{{course.semester or "??"}}</td>
                         <td>{{course.year or "??"}}</td>
                         <td>{{course.professor or "??"}}</td>
-                        <td><a href="javascript:void(0);" onclick="addForm(event)">::symbol::</a></td>
+                        <td><a href="javascript:void(0);" onclick="addForm()"><i class="fa fa-toggle-right"></i></a></td>
                     </tr>
                     {% end for %}
                 </table>
