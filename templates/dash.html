@@ -5,6 +5,24 @@
         {% include "head.html" %}
         <link rel="stylesheet" type="text/css" href="/static/splash.css">
         <link rel="stylesheet" type="text/css" href="/static/font-awesome/css/font-awesome.min.css">
+        <script type="text/javascript" src="/static/js/socket.js"></script>
+        <script type="text/javascript">
+        function addForm(course_id, clickEvent){
+             var data = {
+                    //sets values to be sent to the websocket and then used by the 
+                    username:"{{user.user_name}}",
+                    apikey:"{{user.apikey}}",
+                    course:course_id,
+                }
+
+            function callback(returnedObject, clickEvent){
+                location.reload(true);
+            }
+
+            var result = makeConnection("{{socketbase}}"+"api/add_course", data, callback, clickEvent);
+
+        }
+        </script>
     </head>
     <body>
         <div id="container" class="pure-g">
@@ -21,9 +39,9 @@
                         <td>{{course.semester or "??"}}</td>
                         <td>{{course.year or "??"}}</td>
                         <td>{{course.professor or "??"}}</td>
-                        <td>{{ your_ratings[course.course_id].rating or "--"}}</td>
-                        <td>{{ your_ratings[course.course_id].difficulty or "--"}}</td>
-                        <td>{{ your_ratings[course.course_id].grade or "--"}}</td>
+                        <td>{{your_ratings[course.course_id].rating or "--"}}</td>
+                        <td>{{your_ratings[course.course_id].difficulty or "--"}}</td>
+                        <td>{{your_ratings[course.course_id].grade or "--"}}</td>
                     </tr>
                     {% end for %}
                 </table>
@@ -37,7 +55,7 @@
                         <td>{{course.semester or "??"}}</td>
                         <td>{{course.year or "??"}}</td>
                         <td>{{course.professor or "??"}}</td>
-                        <td><a href="javascript:void(0);" onclick="addForm()"><i class="fa fa-toggle-right"></i></a></td>
+                        <td><a href="javascript:void(0);" onclick="addForm({{course.course_id}}, event)"><i class="fa fa-toggle-right"></i></a></td>
                     </tr>
                     {% end for %}
                 </table>
