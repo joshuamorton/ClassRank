@@ -26,9 +26,9 @@ from api.handlers.ApiUser import ApiUser
 from api.handlers.ApiToggleSocket import ApiToggleSocket
 from api.handlers.ApiAddCourse import ApiAddCourse
 
-
 from databases.database import Database
 
+from backend.Filter import Filter
 
 global_settings = {
     "static_path": os.path.join(os.path.dirname(__file__), "static"),
@@ -40,6 +40,7 @@ global_settings = {
 
 # the gloabl database
 db = Database()
+rating_filter = Filter(db, "rating")
 
 # a list of web routes and the objects to which they connect
 class_rank = Application([
@@ -122,3 +123,5 @@ if __name__ == "__main__":
     if argv[1] == "admin":
         with db.session_scope() as session:
             db.update_user(session, argv[2], admin=True)
+    if argv[1] == "filter_test":
+        print(rating_filter.calculated_rating(4, 5))
