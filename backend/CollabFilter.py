@@ -278,7 +278,7 @@ class CollaborativeFilter(object):
         """
 
         #used to keep track of any changes in the items compared, if an item is removed or added
-        items = [column[0] for column in selfself.items()]
+        items = [column[0] for column in self.items()]
         usersItems = {item for item in items if self._opinion(user, item) is not 0}
 
 
