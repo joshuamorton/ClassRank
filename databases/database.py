@@ -18,6 +18,7 @@ from . import SchoolDatabase
 import time  # for creating hash salts
 import scrypt  # for hashing passwords
 import hashlib
+import os
 
 
 class Database(object):
@@ -46,7 +47,7 @@ class Database(object):
 
         The system defaults to name="ClassRank.db", table="main" folder="data", uid="user_id, and hashlength="64"
         """
-        self.engine = sqlalchemy.create_engine('sqlite:///'+folder+'/'+name)
+        self.engine = sqlalchemy.create_engine(os.environ['DATABASE_URL'])
 
         self.hashlength = hashlength  # length of the scrypt password hash
         self.base = sqlalchemy.ext.declarative.declarative_base()
