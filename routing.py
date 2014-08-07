@@ -40,7 +40,18 @@ global_settings = {
 
 # the gloabl database
 db = Database()
+
 rating_filter = Filter(db, "rating")
+grade_filter = Filter(db, "grade")
+difficulty_filter = Filter(db, "difficulty")
+
+class Filters(object):  # a pseudo-struct to hold the filters
+    pass
+
+filters = Filters()
+filters.rating = rating_filter
+filters.grade = grade_filter
+filters.difficulty = difficulty_filter
 
 # a list of web routes and the objects to which they connect
 class_rank = Application([
