@@ -19,6 +19,7 @@ import time  # for creating hash salts
 import scrypt  # for hashing passwords
 import hashlib
 import os
+from  base64 import b64encode
 
 
 class Database(object):
@@ -264,7 +265,7 @@ class Database(object):
     def add_user(self, session, username, email, password, school, first=None, last=None, admin=False, mod=False):  # done
         if not self.user_exists(session, user_name=username):
             salt = str(int(time.time()))
-            pwhash = scrypt.hash(password, salt, self.hashlength)
+            pwhash = b64encode(scrypt.hash(password, salt, self.hashlength))
             apikey = hashlib.sha256(pwhash).hexdigest()
             if self.school_exists(session, school_short=school):
                 schoolid = self.fetch_school_by_name(session, school).school_id

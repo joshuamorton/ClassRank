@@ -34,7 +34,7 @@ class UserDatabase(object):
             user_id = Column(sqlalchemy.Integer, primary_key=True)
             user_name = Column(String(32), nullable=False, unique=True)
             email_address = Column(String(64), nullable=False, unique=True)
-            password_hash = Column(String(hashlength), nullable=False)
+            password_hash = Column(String(hashlength*2), nullable=False)
             password_salt = Column(String(16), nullable=False)
             apikey = Column(String(64), nullable=False)
             # personal information
