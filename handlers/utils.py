@@ -5,7 +5,7 @@ def auth_user(database, username, password):
     with database.session_scope() as session:
         user = database.fetch_user_by_name(session, username)
         salt = user.password_salt
-        if b64encode(scrypt.hash(password, salt, database.hashlength)) == user.password_hash:
+        if b64encode(scrypt.hash(password, salt, database.hashlength)).decode('utf-8') == user.password_hash:
             return True
         return False
 

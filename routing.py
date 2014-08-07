@@ -35,7 +35,7 @@ global_settings = {
     "autoreload": True,
     "template_path": os.path.join(os.path.dirname(__file__), "templates"),
     "login_url": "/login",
-    "cookie_secret": "Hello world!"
+    "cookie_secret": "This is actually a secret cookie!986425&(!@"
     }
 
 # the gloabl database
