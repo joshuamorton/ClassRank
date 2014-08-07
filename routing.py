@@ -122,7 +122,7 @@ class_rank = Application([
 
 
 def runserver():
-    class_rank.listen(8888)
+    class_rank.listen(int(os.environ.get("PORT", 5000)))
     ioloop.IOLoop.instance().start()
 
 
