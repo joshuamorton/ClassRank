@@ -381,7 +381,7 @@ class Database(object):
         if self.user_exists(session, user_name=username):
             user = self.fetch_user_by_name(session, username)
             newsalt = str(int(time.time()))
-            newhash = scrypt.hash(new_password, newsalt, self.hashlength)
+            newhash = b64encode(scrypt.hash(new_password, newsalt, self.hashlength))
             user.password_hash = newhash
             user.password_salt = newsalt
             return True
