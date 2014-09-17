@@ -1,3 +1,5 @@
+[![PDF Status](https://www.sharelatex.com/github/repos/joshuamorton/ClassRank/builds/latest/badge.svg)](https://www.sharelatex.com/github/repos/joshuamorton/ClassRank/builds/latest/output.pdf)
+
 ClassRank
 =========
 
